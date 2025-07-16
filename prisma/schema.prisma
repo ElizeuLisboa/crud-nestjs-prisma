@@ -1,6 +1,6 @@
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -8,11 +8,51 @@ generator client {
 }
 
 model Cliente {
-  id        Int      @id @default(autoincrement())
-  nome      String
-  email     String
-  cpf       String   @unique
-  criadoEm  DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id       Int     @id @default(autoincrement())
+  nome     String
+  email    String  @unique
+  password String
+  cpf      String?  @unique
+  role     Role    @default(USER) // enum abaixo
+  cep        String?  
+  logradouro String?   // NOVO campo para rua/avenida
+  cidade     String?
+  estado     String?
+  pedidos  Pedido[]
 }
 
+enum Role {
+  SUPERUSER
+  ADMIN
+  USER
+}
+
+model Produto {
+  id          Int     @id @default(autoincrement())
+  title       String  @unique
+  description String
+  price       Float
+  image       String
+  createdAt   DateTime     @default(now())
+  itens       ItemPedido[] 
+}
+
+
+model Pedido {
+  id            Int          @id @default(autoincrement())
+  numeroPedido  String       @unique
+  clienteId     Int
+  cliente       Cliente      @relation(fields: [clienteId], references: [id])
+  criadoEm      DateTime     @default(now())
+  itens         ItemPedido[]
+}
+
+model ItemPedido {
+  id         Int @id @default(autoincrement())
+  pedidoId   Int
+  produtoId  Int
+  quantidade Int
+
+  pedido  Pedido  @relation(fields: [pedidoId], references: [id])
+  produto Produto @relation(fields: [produtoId], references: [id])
+}

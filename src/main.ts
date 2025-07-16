@@ -1,24 +1,25 @@
-import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
+import { NestExpressApplication } from "@nestjs/platform-express";
+import { join } from "path";
+import * as express from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
 
-  // Adicione isso para logar erros detalhados no console
-  app.useGlobalFilters({
-    catch(exception, host) {
-      console.error(exception);
-      throw exception;
-    }
+  app.useStaticAssets(join(process.cwd(), "uploads"), {
+    prefix: "/uploads/",
   });
 
-  await app.listen(3000);
+  app.enableCors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  });
+
+  await app.listen(4000);
+  console.log(process.env.NODE_ENV)
+
 }
 bootstrap();

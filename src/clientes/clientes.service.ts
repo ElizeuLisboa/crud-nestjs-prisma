@@ -1,29 +1,90 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
-import { CreateClienteDto } from './dto/create-cliente.dto';
-import { UpdateClienteDto } from './dto/update-cliente.dto';
-
-const prisma = new PrismaClient();
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateClienteDto } from "./dto/create-cliente.dto";
+import { UpdateClienteDto } from "./dto/update-cliente.dto";
+import * as bcrypt from "bcrypt";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 @Injectable()
 export class ClientesService {
-  async create(data: CreateClienteDto) {
-    return prisma.cliente.create({ data });
-  }
+  constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return prisma.cliente.findMany();
+    return this.prisma.cliente.findMany();
   }
 
   async findOne(id: number) {
-    return prisma.cliente.findUnique({ where: { id } });
+    const cliente = await this.prisma.cliente.findUnique({
+      where: { id },
+    });
+    if (!cliente) {
+      throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
+    }
+    return cliente;
+  }
+
+  async create(createClienteDto: CreateClienteDto) {
+    const hashedPassword = await bcrypt.hash(createClienteDto.senha, 10);
+
+    try {
+      return await this.prisma.cliente.create({
+        data: {
+          nome: createClienteDto.nome,
+          email: createClienteDto.email,
+          cpf: createClienteDto.cpf,
+          password: hashedPassword,
+          // role: createClienteDto.role,
+          role: createClienteDto.role ?? 'USER',
+          cep: createClienteDto.cep || null,
+          cidade: createClienteDto.cidade || null,
+          estado: createClienteDto.estado || null,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        const campo = Array.isArray(error.meta?.target)
+          ? error.meta.target.join(", ")
+          : "campo único";
+        throw new ConflictException(`Já existe um cliente com esse ${campo}.`);
+      }
+      throw error;
+    }
   }
 
   async update(id: number, data: UpdateClienteDto) {
-    return prisma.cliente.update({ where: { id }, data });
+    await this.findOne(id);
+
+    const { senha, ...resto } = data;
+
+    const dadosParaAtualizar: any = { ...resto };
+
+    if (senha) {
+      const hashedPassword = await bcrypt.hash(senha, 10);
+      dadosParaAtualizar.password = hashedPassword;
+    }
+
+    // Garante que campos de endereço sejam atualizados também
+    if (resto.cep === undefined) dadosParaAtualizar.cep = null;
+    if (resto.cidade === undefined) dadosParaAtualizar.cidade = null;
+    if (resto.estado === undefined) dadosParaAtualizar.estado = null;
+
+    return this.prisma.cliente.update({
+      where: { id },
+      data: dadosParaAtualizar,
+    });
   }
 
   async remove(id: number) {
-    return prisma.cliente.delete({ where: { id } });
+    await this.findOne(id);
+    return this.prisma.cliente.delete({
+      where: { id },
+    });
   }
 }
