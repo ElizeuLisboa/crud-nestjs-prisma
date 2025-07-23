@@ -38,22 +38,6 @@ export class ClientesController {
     return this.clientesService.findOne(id);
   }
 
-  // @Post()
-  // @UseGuards(JwtAuthGuard)
-  // async create(
-  //   @Body() createClienteDto: CreateClienteDto,
-  //   @Request() req: any
-  // ) {
-  //   // Permite apenas ADMIN ou SUPERUSER criar
-  //   if (!["ADMIN", "SUPERUSER"].includes(req.user?.role)) {
-  //     throw new ForbiddenException(
-  //       "Apenas administradores podem cadastrar clientes"
-  //     );
-  //   }
-
-  //   return this.clientesService.create(createClienteDto);
-  // }
-
   @Post()
   async create(@Body() createClienteDto: CreateClienteDto) {
     return this.clientesService.create(createClienteDto);

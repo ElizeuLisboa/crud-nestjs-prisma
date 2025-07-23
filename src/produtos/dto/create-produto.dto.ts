@@ -1,6 +1,7 @@
-import { IsString, IsNotEmpty, IsNumber, IsUrl } from "class-validator";
+import { IsString, IsNotEmpty, IsNumber, IsUrl, Min } from "class-validator";
 
 export class CreateProdutoDto {
+  
   @IsString()
   @IsNotEmpty({ message: "O título é obrigatório" })
   title!: string;
@@ -10,6 +11,7 @@ export class CreateProdutoDto {
   description!: string;
 
   @IsNumber({}, { message: "O preço deve ser um número" })
+  @Min(0)
   price!: number;
 
   @IsString()

@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateProdutoDto } from "./dto/create-produto.dto";
@@ -15,7 +16,27 @@ export class ProdutosService {
     return this.prisma.produto.create({ data });
   }
 
-  async findAll() {
-    return this.prisma.produto.findMany();
+  async findAll(params: { categoria?: string; nome?: string }) {
+    const { categoria, nome } = params;
+
+    const produtos = await this.prisma.produto.findMany({
+      where: {
+        categoria: categoria || undefined,
+        title: nome
+          ? {
+              contains: nome,
+            }
+          : undefined,
+      },
+      orderBy: { id: "desc" },
+    });
+
+    return produtos;
+  }
+
+  async findOne(id: number) {
+    return this.prisma.produto.findUnique({
+      where: { id },
+    });
   }
 }

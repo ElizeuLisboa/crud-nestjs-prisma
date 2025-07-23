@@ -1,5 +1,6 @@
 import {
   Get,
+  Query,
   Controller,
   Post,
   Body,
@@ -8,12 +9,15 @@ import {
   UploadedFile,
   Request,
   BadRequestException,
+  Param,
+  NotFoundException,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
 import { extname, join } from "path";
 import { ProdutosService } from "./produtos.service";
+import { Roles } from "src/auth/roles.decorator";
 
 @Controller("produtos")
 export class ProdutosController {
@@ -21,16 +25,18 @@ export class ProdutosController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
+  @Roles("ADMIN", "SUPERUSER")
   @UseInterceptors(
     FileInterceptor("imagem", {
       storage: diskStorage({
-        destination: join(process.cwd(), "uploads", "produtos"), // ✅ caminho absoluto
+        // destination: join(process.cwd(), "uploads", "produtos"),
+        destination: "./uploads/produtos",
         filename: (req, file, callback) => {
           const uniqueSuffix =
             Date.now() + "-" + Math.round(Math.random() * 1e9);
           const ext = extname(file.originalname);
           const filename = `${file.fieldname}-${uniqueSuffix}${ext}`;
-          console.log("🖼️ Nome do arquivo salvo:", filename);
+
           callback(null, filename);
         },
       }),
@@ -50,10 +56,6 @@ export class ProdutosController {
     @Body() body: any,
     @Request() req: any
   ) {
-    console.log("📦 body:", body);
-    console.log("👤 req.user:", req.user);
-    console.log("🗂️ file:", file?.originalname, file?.path);
-
     if (req.user?.role !== "ADMIN" && req.user?.role !== "SUPERUSER") {
       throw new BadRequestException(
         "Apenas administradores podem cadastrar produtos."
@@ -78,8 +80,20 @@ export class ProdutosController {
     });
   }
 
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    const produto = await this.produtosService.findOne(+id);
+    if (!produto) {
+      throw new NotFoundException(`Produto com ID ${id} não encontrado`);
+    }
+    return produto;
+  }
+
   @Get()
-  async findAll() {
-    return this.produtosService.findAll();
+  async findAll(
+    @Query("categoria") categoria?: string,
+    @Query("nome") nome?: string
+  ) {
+    return this.produtosService.findAll({ categoria, nome });
   }
 }
