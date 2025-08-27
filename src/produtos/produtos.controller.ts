@@ -18,6 +18,8 @@ import { diskStorage } from "multer";
 import { extname, join } from "path";
 import { ProdutosService } from "./produtos.service";
 import { Roles } from "src/auth/roles.decorator";
+import { PrismaClient } from "@prisma/client";
+
 
 @Controller("produtos")
 export class ProdutosController {
@@ -80,8 +82,8 @@ export class ProdutosController {
     });
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
+  @Get(":id")
+  async findOne(@Param("id") id: string) {
     const produto = await this.produtosService.findOne(+id);
     if (!produto) {
       throw new NotFoundException(`Produto com ID ${id} não encontrado`);
@@ -90,10 +92,18 @@ export class ProdutosController {
   }
 
   @Get()
-  async findAll(
-    @Query("categoria") categoria?: string,
-    @Query("nome") nome?: string
-  ) {
-    return this.produtosService.findAll({ categoria, nome });
-  }
+async findAll(@Query("categoria") categoria?: string, @Query("nome") nome?: string) {
+  console.log("👉 Query recebida no controller:", { categoria, nome });
+  return this.produtosService.findAll({ categoria, nome });
+}
+
+  // @Get()
+  // async findAll(
+  //   @Query("categoria") categoria?: string,
+  //   @Query("nome") nome?: string
+  // ) {
+  //   return this.produtosService.findAll({ categoria, nome });
+  // }
+
+
 }

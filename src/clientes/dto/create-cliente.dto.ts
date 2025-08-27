@@ -8,7 +8,7 @@ import {
   MinLength,
   IsEnum,
 } from "class-validator";
-import { Role } from "@prisma/client";
+import { Role } from "src/common/enums/role";
 import { IsCPF } from "src/validators/is-cpf.validator";
 
 export class CreateClienteDto {

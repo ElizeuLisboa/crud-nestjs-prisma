@@ -1,24 +1,11 @@
+generator client {
+  provider = "prisma-client-js"
+  seed     = "ts-node prisma/seed.ts"
+}
+
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-model Cliente {
-  id       Int     @id @default(autoincrement())
-  nome     String
-  email    String  @unique
-  password String
-  cpf      String?  @unique
-  role     Role    @default(USER) // enum abaixo
-  cep        String?  
-  logradouro String?   // NOVO campo para rua/avenida
-  cidade     String?
-  estado     String?
-  pedidos  Pedido[]
 }
 
 enum Role {
@@ -27,33 +14,51 @@ enum Role {
   USER
 }
 
+
+model Cliente {
+  id         Int      @id @default(autoincrement())
+  nome       String
+  email      String   @unique
+  password   String
+  cpf        String?  @unique
+  role       Role     @default(USER)
+  cep        String?
+  logradouro String?
+  cidade     String?
+  estado     String?
+  pedidos    Pedido[]
+}
+
 model Produto {
-  id          Int     @id @default(autoincrement())
-  title       String  @unique
+  id          Int          @id @default(autoincrement())
+  title       String       @unique
   categoria   String?
   description String
   price       Float
   image       String
+  estoque     Int          @default(0)
   createdAt   DateTime     @default(now())
-  itens       ItemPedido[] 
+  itens       ItemPedido[]
 }
-
 
 model Pedido {
-  id            Int          @id @default(autoincrement())
-  numeroPedido  String       @unique
-  clienteId     Int
-  cliente       Cliente      @relation(fields: [clienteId], references: [id])
-  criadoEm      DateTime     @default(now())
-  itens         ItemPedido[]
+  id              Int        @id @default(autoincrement())
+  numeroPedido    String
+  clienteId       Int
+  cliente         Cliente    @relation(fields: [clienteId], references: [id])
+  valorTotal      Float
+  status          String
+  stripeSessionId String     @unique
+  itens           ItemPedido[]
 }
 
+
 model ItemPedido {
-  id         Int @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   pedidoId   Int
   produtoId  Int
   quantidade Int
-
-  pedido  Pedido  @relation(fields: [pedidoId], references: [id])
-  produto Produto @relation(fields: [produtoId], references: [id])
+  valor      Float?
+  produto    Produto @relation(fields: [produtoId], references: [id])
+  pedido     Pedido  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
 }

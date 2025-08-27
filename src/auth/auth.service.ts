@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { PrismaService } from "../prisma/prisma.service";
+import { PrismaService } from 'src/prisma/prisma.service';
 import { LoginDto } from "../auth/login.dto";
 import * as bcrypt from "bcrypt";
 
@@ -28,13 +28,14 @@ export class AuthService {
     if (!passwordMatch) {
       throw new UnauthorizedException("Credenciais inválidas");
     }
-
+     
     const payload = {
       sub: cliente.id,
       email: cliente.email,
       nome: cliente.nome,
       role: cliente.role,
       cep: cliente.cep,
+      logradouro: cliente.logradouro,
       cidade: cliente.cidade,
       estado: cliente.estado,
     };
@@ -50,6 +51,7 @@ export class AuthService {
         email: cliente.email,
         role: cliente.role,
         cep: cliente.cep,
+        logradouro: cliente.logradouro,
         cidade: cliente.cidade,
         estado: cliente.estado,
       },

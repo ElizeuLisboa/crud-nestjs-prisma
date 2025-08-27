@@ -1,4 +1,4 @@
-import { IsArray, ArrayMinSize, ValidateNested, IsInt } from 'class-validator';
+import { IsArray, ArrayMinSize, ValidateNested, IsInt, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ItemPedidoDto {
@@ -6,6 +6,7 @@ export class ItemPedidoDto {
   produtoId!: number;
 
   @IsInt()
+  @Min(1)
   quantidade!: number;
 }
 

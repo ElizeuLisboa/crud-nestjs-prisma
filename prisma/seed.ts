@@ -1,170 +1,84 @@
-// import { PrismaClient } from '@prisma/client';
-// import bcrypt from 'bcrypt';
-// import 'dotenv/config'; // 👈 importante para carregar o .env
+import { PrismaClient } from "@prisma/client";
+import * as bcrypt from "bcrypt";
 
-// const prisma = new PrismaClient();
-
-// async function main() {
-//   // console.log('🧹 Limpando usuários SUPERUSER e ADMIN antigos...');
-
-//   await prisma.cliente.deleteMany({
-//     where: {
-//       email: { in: ['superuser@email.com', 'admin@email.com'] },
-//     },
-//   });
-
-//   console.log('🔐 Gerando hashes das senhas...');
-
-//   const superuserPassword = process.env.SUPERUSER_PASSWORD || 'senhaSuper123';
-//   const adminPassword = process.env.ADMIN_PASSWORD || 'senhaAdmin123';
-
-//   const hashSuper = await bcrypt.hash(superuserPassword, 10);
-//   const hashAdmin = await bcrypt.hash(adminPassword, 10);
-
-//   console.log('👤 Criando usuários SUPERUSER e ADMIN...');
-
-//   await prisma.cliente.createMany({
-//     data: [
-//       {
-//         nome: 'Usuário Super',
-//         email: 'superuser@email.com',
-//         password: hashSuper,
-//         cpf: '00000000000', // se obrigatório
-//         role: 'SUPERUSER',
-//       },
-//       {
-//         nome: 'Usuário Admin',
-//         email: 'admin@email.com',
-//         password: hashAdmin,
-//         cpf: '11111111111',
-//         role: 'ADMIN',
-//       },
-//     ],
-//   });
-
-//   // continua com produtos...
-// }
-
-
-// import { PrismaClient } from '@prisma/client';
-// import fetch from 'node-fetch';
-// import bcrypt from 'bcrypt';
-
-// const prisma = new PrismaClient();
-
-// async function main() {
-//   console.log('👤 Criando usuários padrão...');
-
-//   const senha = await bcrypt.hash('senhaSuper123', 10);
-//   await prisma.cliente.upsert({
-//     where: { email: 'superuser@email.com' },
-//     update: {      
-//     },
-//     create: {
-//       nome: 'Usuário Super',
-//       email: 'superuser@email.com',
-//       password: senha,
-//       role: 'SUPERUSER',
-//     },
-//   });
-
-//   await prisma.cliente.upsert({
-//     where: { email: 'admin@email.com' },
-//     update: {},
-//     create: {
-//       nome: 'Usuário Admin',
-//       email: 'admin@email.com',
-//       password: senha,
-//       role: 'ADMIN',
-
-//     },
-//   });
-
-  // console.log('📦 Importando produtos de teste da FakeStoreAPI...');
-
-  // const res = await fetch('https://fakestoreapi.com/products');
-  // const produtos = await res.json() as {
-  //   id: number;
-  //   title: string;
-  //   description: string;
-  //   price: number;
-  //   image: string;
-  // }[];
-
-  // for (const p of produtos) {
-  //   await prisma.produto.upsert({
-  //     where: { title: p.title },
-  //     update: {},
-  //     create: {
-  //       title: p.title,
-  //       description: p.description,
-  //       price: p.price,
-  //       image: p.image,
-  //     },
-  //   });
-  // }
-
-  // console.log('✅ Seed finalizado com sucesso!');
-// }
-
-// main()
-//   .catch((e) => console.error('Erro no seed:', e))
-//   .finally(() => prisma.$disconnect());
-
-import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  await prisma.produto.deleteMany(); // limpa os produtos existentes
+  console.log("🚀 Iniciando seed...");
 
-  await prisma.produto.createMany({
-    data: [
-      {
-        title: 'Camiseta Preta Básica',
-        categoria: 'roupas',
-        description: 'Camiseta 100% algodão, confortável e estilosa.',
-        price: 49.90,
-        image: 'https://images.pexels.com/photos/1006204/pexels-photo-1006204.jpeg',
-      },
-      {
-        title: 'Tênis Esportivo Masculino',
-        categoria: 'calçados',
-        description: 'Leve, resistente e ideal para corrida.',
-        price: 189.99,
-        image: 'https://images.pexels.com/photos/2529148/pexels-photo-2529148.jpeg',
-      },
-      {
-        title: 'Fone de Ouvido Bluetooth',
-        categoria: 'eletrônicos',
-        description: 'Som de alta qualidade e bateria de longa duração.',
-        price: 139.00,
-        image: 'https://images.pexels.com/photos/373945/pexels-photo-373945.jpeg',
-      },
-      {
-        title: 'Notebook Lenovo Ideapad 3',
-        categoria: 'informática',
-        description: 'Intel i5, 8GB RAM, SSD 256GB. Ideal para estudos e trabalho.',
-        price: 2999.90,
-        image: 'https://images.pexels.com/photos/18105/pexels-photo.jpg',
-      },
-      {
-        title: 'Relógio Smartwatch Fit',
-        categoria: 'acessórios',
-        description: 'Acompanha sua saúde e atividades físicas.',
-        price: 249.50,
-        image: 'https://images.pexels.com/photos/267394/pexels-photo-267394.jpeg',
-      },
-      {
-        title: 'Livro: O Hobbit',
-        categoria: 'livros',
-        description: 'Clássico de J.R.R. Tolkien em edição especial.',
-        price: 59.90,
-        image: 'https://images.pexels.com/photos/5904937/pexels-photo-5904937.jpeg',
-      },
-    ],
+  // Apagar todos os registros de pedidos e itens (se quiser limpar)
+  await prisma.itemPedido.deleteMany();
+  await prisma.pedido.deleteMany();
+
+  // Clientes principais
+  const clienteSuper = await prisma.cliente.findUnique({
+    where: { email: "superuser@email.com" },
   });
 
-  console.log('Produtos criados com sucesso!');
+  if (!clienteSuper) {
+    const senhaSuper = await bcrypt.hash("senhaSuper@123", 10);
+    await prisma.cliente.create({
+      data: {
+        nome: "Usuário Super",
+        email: "superuser@email.com",
+        password: senhaSuper,
+        role: "SUPERUSER",
+        cpf: "00000000001",
+        cidade: "São Paulo",
+        estado: "SP",
+      },
+    });
+  }
+
+  const clienteAdmin = await prisma.cliente.findUnique({
+    where: { email: "admin@email.com" },
+  });
+
+  if (!clienteAdmin) {
+    const senhaAdmin = await bcrypt.hash("senhaAdmin@123", 10);
+    await prisma.cliente.create({
+      data: {
+        nome: "Usuário Admin",
+        email: "admin@email.com",
+        password: senhaAdmin,
+        role: "ADMIN",
+        cpf: "00000000002",
+        cidade: "Rio de Janeiro",
+        estado: "RJ",
+      },
+    });
+  }
+
+  // Produtos (somente se não houver produtos no banco)
+  const produtosExistentes = await prisma.produto.count();
+  if (produtosExistentes === 0) {
+    const produtos = [
+      { title: "Fone de Ouvido Bluetooth", categoria: "Eletrônicos", description: "Fone sem fio com microfone e cancelamento de ruído.", price: 149.9, estoque: 100, image: "https://images.pexels.com/photos/3394663/pexels-photo-3394663.jpeg" },
+      { title: "Smartphone Android", categoria: "Eletrônicos", description: 'Smartphone com tela de 6.5", 128GB de memória.', price: 1299.9, estoque: 100, image: "https://images.pexels.com/photos/6078122/pexels-photo-6078122.jpeg" },
+      { title: "Notebook Ultrafino", categoria: "Informática", description: "Notebook leve e rápido com SSD de 512GB.", price: 2999.9, estoque: 100, image: "https://images.pexels.com/photos/18105/pexels-photo.jpg" },
+      { title: "Mouse Gamer RGB", categoria: "Periféricos", description: "Mouse ergonômico com iluminação RGB.", price: 99.9, estoque: 100, image: "https://images.pexels.com/photos/163743/pexels-photo-163743.jpeg" },
+      { title: "Teclado Mecânico", categoria: "Periféricos", description: "Teclado mecânico com switches azuis.", price: 199.9, estoque: 100, image: "https://images.pexels.com/photos/2582937/pexels-photo-2582937.jpeg" },
+      { title: "Câmera Fotográfica DSLR", categoria: "Fotografia", description: "Câmera profissional com lente 18-55mm.", price: 3499.9, estoque: 100, image: "https://images.pexels.com/photos/51383/camera-lens-lens-camera-photography-51383.jpeg" },
+      { title: "Caixa de Som Bluetooth", categoria: "Áudio", description: "Caixa de som portátil com bateria de longa duração.", price: 249.9, estoque: 100, image: "https://images.pexels.com/photos/63703/pexels-photo-63703.jpeg" },
+      { title: 'Monitor LED 24"', categoria: "Informática", description: "Monitor Full HD com entrada HDMI e VGA.", price: 899.9, estoque: 100, image: "https://images.pexels.com/photos/572187/pexels-photo-572187.jpeg" },
+      { title: "Relógio Smartwatch", categoria: "Wearables", description: "Relógio inteligente com monitoramento cardíaco.", price: 299.9, estoque: 100, image: "https://images.pexels.com/photos/277394/pexels-photo-277394.jpeg" },
+      { title: "Tablet 10 polegadas", categoria: "Eletrônicos", description: "Tablet com Android, ideal para estudos e entretenimento.", price: 799.9, estoque: 100, image: "https://images.pexels.com/photos/5082568/pexels-photo-5082568.jpeg" },
+      { title: "Webcam Full HD", categoria: "Periféricos", description: "Câmera para videochamadas com microfone embutido.", price: 159.9, estoque: 100, image: "https://images.pexels.com/photos/4031814/pexels-photo-4031814.jpeg" },
+      { title: "Carregador Portátil (Power Bank)", categoria: "Acessórios", description: "10.000mAh para carregar dispositivos móveis.", price: 129.9, estoque: 100, image: "https://images.pexels.com/photos/4042803/pexels-photo-4042803.jpeg" },
+      { title: "Headset Gamer com Microfone", categoria: "Áudio", description: "Fone com som 7.1 e microfone ajustável.", price: 179.9, estoque: 100, image: "https://images.pexels.com/photos/3394660/pexels-photo-3394660.jpeg" },
+      { title: "HD Externo 1TB", categoria: "Informática", description: "HD portátil USB 3.0 para backup de arquivos.", price: 349.9, estoque: 100, image: "https://images.pexels.com/photos/159220/usb-harddisk-data-backup-159220.jpeg" },
+      { title: "Controle Bluetooth para Celular", categoria: "Games", description: "Controle compatível com Android e iOS.", price: 119.9, estoque: 100, image: "https://images.pexels.com/photos/3945663/pexels-photo-3945663.jpeg" },
+      { title: "Impressora Multifuncional", categoria: "Informática", description: "Imprime, copia e digitaliza com Wi-Fi.", price: 499.9, estoque: 100, image: "https://images.pexels.com/photos/3952075/pexels-photo-3952075.jpeg" },
+      { title: "Luminária LED USB", categoria: "Casa", description: "Luminária flexível com entrada USB.", price: 49.9, estoque: 100, image: "https://images.pexels.com/photos/1095663/pexels-photo-1095663.jpeg" },
+      { title: "Echo Dot (Alexa)", categoria: "Casa Inteligente", description: "Assistente virtual com controle por voz.", price: 299.9, estoque: 100, image: "https://images.pexels.com/photos/4008453/pexels-photo-4008453.jpeg" },
+      { title: "Filtro de Linha com 5 tomadas", categoria: "Acessórios", description: "Filtro de linha com proteção contra surtos.", price: 59.9, estoque: 100, image: "https://images.pexels.com/photos/4391480/pexels-photo-4391480.jpeg" },
+      { title: "Cabo USB Tipo C 1m", categoria: "Acessórios", description: "Cabo para carregamento rápido e transferência de dados.", price: 29.9, estoque: 100, image: "https://images.pexels.com/photos/1054397/pexels-photo-1054397.jpeg" },
+    ];
+
+    await prisma.produto.createMany({ data: produtos });
+  }
+
+  console.log("✅ Seed concluído com sucesso!");
 }
 
 main()
@@ -173,4 +87,3 @@ main()
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());
-
