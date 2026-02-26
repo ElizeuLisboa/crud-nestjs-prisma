@@ -1,22 +1,16 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Param,
-  Body,
-  ParseIntPipe,
-  UseGuards,
-  Request,
-  ForbiddenException,
-  NotFoundException,
+import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe,  UseGuards,
+  Request, ForbiddenException, NotFoundException, BadRequestException,
 } from "@nestjs/common";
 import { ClientesService } from "./clientes.service";
-import { CreateClienteDto } from "./dto/create-cliente.dto";
 import { UpdateClienteDto } from "./dto/update-cliente.dto";
-import { JwtAuthGuard } from "../auth/jwt-auth.guard";
-import { User } from "../auth/user.decorator";
+import { JwtAuthGuard } from "../modules/auth/jwt-auth.guard";
+import { RolesGuard } from "../modules/auth/roles.guard";
+import { Roles } from "../modules/auth/roles.decorator";
+import { User } from "../modules/auth/user.decorator";
+import { CreateClienteDto } from "./dto/create-cliente.dto";
+import { CadastroRapidoDto } from "./dto/cadastro-rapido.dto";
+import { AtualizarCadastroRapidoDto } from "./dto/atualizar-cadastro-rapido.dto";
+import { CreateClientePublicoDto } from "./dto/create-cliente-publico.dto";
 
 @Controller("clientes")
 export class ClientesController {
@@ -28,66 +22,80 @@ export class ClientesController {
     return { perfil: user };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("ADMIN", "SUPERUSER")
   @Get()
   findAll() {
     return this.clientesService.findAll();
   }
 
+  @Get("buscar-cpf/:cpf")
+  async buscarPorCpf(@Param("cpf") cpf: string) {
+    if (!cpf || cpf.trim() === "") {
+      throw new BadRequestException("CPF é obrigatório");
+    }
+    return this.clientesService.buscarPorCpf(cpf);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("ADMIN", "SUPERUSER")
   @Get(":id")
   findOne(@Param("id", ParseIntPipe) id: number) {
     return this.clientesService.findOne(id);
   }
 
-  @Post()
-  async create(@Body() createClienteDto: CreateClienteDto) {
-    return this.clientesService.create(createClienteDto);
+   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("ADMIN", "SUPERUSER", "CAIXA")
+  @Post("cadastro-rapido")
+  async cadastroRapido(@Body() dto: CreateClienteDto) {
+    return this.clientesService.cadastroRapido(dto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("ADMIN", "SUPERUSER", "CAIXA")
+  @Put("cadastro-rapido/:cpf")
+  async atualizarCadastroRapido(
+    @Param("cpf") cpf: string,
+    @Body() body: AtualizarCadastroRapidoDto,
+  ) {
+    return this.clientesService.atualizarCadastroRapido(cpf, body);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("ADMIN", "SUPERUSER")
   @Put(":id")
-  @UseGuards(JwtAuthGuard)
   async update(
     @Param("id", ParseIntPipe) id: number,
     @Body() updateClienteDto: UpdateClienteDto,
-    @Request() req: any
+    @Request() req: any,
   ) {
-    // Se tentar alterar role, só SUPERUSER pode
     if (updateClienteDto.role && req.user?.role !== "SUPERUSER") {
       throw new ForbiddenException(
-        "Apenas SUPERUSER pode alterar o campo role"
+        "Apenas SUPERUSER pode alterar o campo role",
       );
     }
-
-    // Opcional: proteger para que USER não possa atualizar clientes
-    if (!["ADMIN", "SUPERUSER"].includes(req.user?.role)) {
-      throw new ForbiddenException(
-        "Apenas administradores podem atualizar clientes"
-      );
-    }
-
     return this.clientesService.update(id, updateClienteDto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("ADMIN", "SUPERUSER")
   @Delete(":id")
-  @UseGuards(JwtAuthGuard)
-  async remove(@Param("id", ParseIntPipe) id: number, @Request() req: any) {
+  async remove(@Param("id", ParseIntPipe) id: number) {
     const cliente = await this.clientesService.findOne(id);
 
     if (!cliente) {
       throw new NotFoundException("Cliente não encontrado");
     }
 
-    // Impede a exclusão de SUPERUSER
     if (cliente.role === "SUPERUSER") {
       throw new ForbiddenException("Você não pode excluir um SUPERUSER");
     }
 
-    // Permite apenas ADMIN ou SUPERUSER excluir
-    if (!["ADMIN", "SUPERUSER"].includes(req.user?.role)) {
-      throw new ForbiddenException(
-        "Apenas administradores podem excluir clientes"
-      );
-    }
-
     return this.clientesService.remove(id);
+  }
+
+  @Post("auto-cadastro")
+  async autoCadastro(@Body() dto: CreateClientePublicoDto) {
+    return this.clientesService.autoCadastro(dto);
   }
 }

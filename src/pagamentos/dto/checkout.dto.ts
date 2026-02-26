@@ -1,4 +1,3 @@
-
 import { Type } from 'class-transformer';
 import { ValidateNested, IsInt, ArrayMinSize } from 'class-validator';
 import { CheckoutItemDto } from './checkout-item.dto';

@@ -1,46 +1,41 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
-import { NestExpressApplication } from "@nestjs/platform-express";
-import { join } from "path";
-import * as express from "express";
-import { ValidationPipe } from "@nestjs/common";
-import * as bodyParser from "body-parser";
+import { json, urlencoded } from "express";
 import { Request, Response, NextFunction } from "express";
+import { ValidationPipe } from "@nestjs/common";
+import { NestExpressApplication } from "@nestjs/platform-express";
+import cookieParser = require("cookie-parser");
+import { join } from "path";
+import * as bodyParser from "body-parser";
 
 async function bootstrap() {
-  const app = await 
-  NestFactory.create<NestExpressApplication>(AppModule, {
-    bodyParser: false, // desabilita parser global
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.use(
+    json({
+      verify: (req: any, res, buffer) => {
+        req.rawBody = buffer;
+      },
+    })
+  );
+
+  app.enableCors({
+    origin: process.env.FRONT_URL,
+    credentials: true,
   });
 
-  // Middleware específico para webhook
-  app.use("/pagamentos/webhook", express.raw({ type: "application/json" }));
-
-  // Body parser normal para outras rotas
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.originalUrl === "/pagamentos/webhook") return next();
-    express.json()(req, res, next);
-  });
-
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.originalUrl === "/pagamentos/webhook") return next();
-    express.urlencoded({ extended: true })(req, res, next);
-  });
-
-  app.use("/uploads", express.static(join(process.cwd(), "uploads")));
-  app.useStaticAssets(join(__dirname, "..", "uploads"), { prefix: "/uploads" });
-
-  app.enableCors({ origin: "http://localhost:3000", credentials: true });
+  app.use(cookieParser());
 
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
       whitelist: true,
-      forbidNonWhitelisted: true,
     })
   );
 
-  await app.listen(4000);
-  console.log("🚀 Servidor rodando em http://localhost:4000");
+  const port = process.env.PORT || 4000;
+  await app.listen(port);
+  // await app.listen(4000);
 }
+
 bootstrap();

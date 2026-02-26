@@ -1,159 +1,84 @@
-async salvarPedido(session: Stripe.Checkout.Session) {
-  const clienteId = Number(session.metadata?.clienteId);
-  if (!clienteId) throw new Error("ClienteId ausente");
+async processarWebhookMercadoPago(body: any) {
+    // 1️⃣ Verifica se é evento de pagamento
+    const paymentId = body?.data?.id;
 
-  const cliente = await this.prisma.cliente.findUnique({ where: { id: clienteId } });
-  if (!cliente) throw new Error("Cliente não encontrado");
-
-  const pedidoExistente = await this.prisma.pedido.findUnique({ where: { stripeSessionId: session.id } });
-  if (pedidoExistente) return; // evita duplicidade
-
-  const numeroPedido = String(Math.floor(Math.random() * 9000000 + 1000000));
-  let itemsMetadata: CheckoutItemDto[] = JSON.parse(session.metadata?.items || "[]");
-
-  await this.prisma.$transaction(async (tx) => {
-    const itensToCreate = [];
-
-    for (const item of itemsMetadata) {
-      const produto = await tx.produto.findUnique({ where: { id: item.produtoId } });
-      if (!produto) throw new Error(`Produto ID ${item.produtoId} não encontrado`);
-      if (produto.estoque < item.quantidade) throw new Error(`Estoque insuficiente`);
-
-      await tx.produto.update({
-        where: { id: produto.id },
-        data: { estoque: produto.estoque - item.quantidade },
-      });
-
-      itensToCreate.push({
-        produtoId: produto.id,
-        quantidade: item.quantidade,
-        valor: produto.price * item.quantidade,
-      });
-    }
-
-    await tx.pedido.create({
-      data: {
-        numeroPedido,
-        clienteId,
-        valorTotal: (session.amount_total ?? 0) / 100,
-        status: "PAGO",
-        stripeSessionId: session.id,
-        itens: { create: itensToCreate },
-      },
-    });
-  });
-}
-
-
-
-async salvarPedido(session: Stripe.Checkout.Session) {
-    this.logger.log(`Processando pedido da sessão: ${session.id}`);
-
-    const clienteId = Number(session.metadata?.clienteId);
-    if (!clienteId) {
-      this.logger.error("ClienteId ausente na sessão Stripe");
+    if (!paymentId) {
       return;
     }
 
-    const cliente = await this.prisma.cliente.findUnique({
-      where: { id: clienteId },
-    });
-    if (!cliente) {
-      this.logger.error(`Cliente não encontrado ID: ${clienteId}`);
-      return;
-    }
-
-    // 🚨 evita salvar pedido duplicado em caso de reenvio do webhook
-    const pedidoExistente = await this.prisma.pedido.findUnique({
-      where: { stripeSessionId: session.id },
-    });
-    console.log("Pedido existente:", pedidoExistente);
-
-    if (pedidoExistente) {
-      this.logger.warn(`Pedido já processado para sessão: ${session.id}`);
-      return;
-    }
-
-    const numeroPedido = String(Math.floor(Math.random() * 9000000 + 1000000));
-    let itemsMetadata: CheckoutItemDto[] = [];
-
-    try {
-      itemsMetadata = JSON.parse(session.metadata?.items || "[]");
-    } catch (e) {
-      this.logger.error("Erro ao converter metadata.items:", e);
-      return;
-    }
-
-    this.logger.log("🎯 Webhook recebido, iniciando criação do pedido...");
-
-    // Calcula soma dos itens para validação
-    const totalItens = itemsMetadata.reduce(
-      (acc, item) => acc + item.preco * item.quantidade,
-      0
+    // 2️⃣ Busca pagamento no Mercado Pago
+    const pagamento = await this.mercadoPagoService.buscarPagamentoPorId(
+      String(paymentId),
     );
-    const valorTotalPedido = (session.amount_total ?? 0) / 100;
 
-    if (Math.abs(totalItens - valorTotalPedido) > 0.01) {
-      this.logger.error(
-        `Soma dos itens (${totalItens.toFixed(
-          2
-        )}) difere do valor total do pedido (${valorTotalPedido.toFixed(2)})`
-      );
-      throw new Error(
-        `Soma dos itens (${totalItens.toFixed(
-          2
-        )}) diferente do valor total do pedido (${valorTotalPedido.toFixed(2)})`
-      );
-    }
+    if (!pagamento) return;
 
-    await this.prisma.$transaction(async (tx) => {
-      this.logger.debug(
-        `📑 Items Metadata: ${JSON.stringify(itemsMetadata, null, 2)}`
-      );
+    // 3️⃣ Recupera pedido pelo external_reference
+    const pedidoId = Number(pagamento.external_reference);
 
-      const itensToCreate: {
-        produtoId: number;
-        quantidade: number;
-        valor: number;
-      }[] = [];
+    if (!pedidoId) return;
 
-      for (const item of itemsMetadata) {
-        const produto = await tx.produto.findUnique({
-          where: { id: item.produtoId },
-        });
+    const pedido = await this.prisma.pedido.findUnique({
+      where: { id: pedidoId },
+    });
 
-        if (!produto) {
-          throw new Error(`Produto ID ${item.produtoId} não encontrado`);
-        }
+    if (!pedido) return;
 
-        if (produto.estoque < item.quantidade) {
-          throw new Error(`Estoque insuficiente para ${produto.title}`);
-        }
-
-        // Atualiza estoque
-        await tx.produto.update({
-          where: { id: produto.id },
-          data: { estoque: produto.estoque - item.quantidade },
-        });
-
-        itensToCreate.push({
-          produtoId: produto.id,
-          quantidade: item.quantidade,
-          valor: produto.price * item.quantidade,
-        });
-      }
-
-      // Cria o pedido com os itens
-      const pedido = await tx.pedido.create({
+    // 4️⃣ Atualiza status conforme MP
+    if (pagamento.status === "approved") {
+      await this.prisma.pedido.update({
+        where: { id: pedidoId },
         data: {
-          numeroPedido,
-          clienteId: cliente.id,
-          valorTotal: valorTotalPedido,
           status: "PAGO",
-          stripeSessionId: session.id,
-          itens: { create: itensToCreate },
+          pagamentoId: String(paymentId),
         },
       });
+    }
 
-      this.logger.log(`📦 Pedido ${pedido.numeroPedido} salvo com sucesso.`);
+    if (pagamento.status === "rejected") {
+      await this.prisma.pedido.update({
+        where: { id: pedidoId },
+        data: {
+          status: "CANCELADO",
+        },
+      });
+    }
+
+    if (pagamento.status === "pending") {
+      await this.prisma.pedido.update({
+        where: { id: pedidoId },
+        data: {
+          status: "AGUARDANDO_PAGAMENTO",
+        },
+      });
+    }
+  }
+
+  async criarCheckoutMercadoPago(pedidoId: number) {
+    const pedido = await this.prisma.pedido.findUnique({
+      where: { id: pedidoId },
+      include: {
+        itens: {
+          include: { produto: true },
+        },
+      },
     });
+
+    if (!pedido) {
+      throw new BadRequestException("Pedido não encontrado");
+    }
+
+    if (pedido.status !== "PENDENTE") {
+      throw new BadRequestException("Pedido inválido");
+    }
+
+    await this.prisma.pedido.update({
+      where: { id: pedido.id },
+      data: { status: "AGUARDANDO_PAGAMENTO" },
+    });
+
+    return this.mercadoPagoService.criarCheckoutMercadoPago(pedido);
+  }
+
+
+

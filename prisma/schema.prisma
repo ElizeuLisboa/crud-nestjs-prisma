@@ -1,57 +1,126 @@
 generator client {
   provider = "prisma-client-js"
-  seed     = "ts-node prisma/seed.ts"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 enum Role {
-  SUPERUSER
-  ADMIN
   USER
+  ADMIN
+  SUPERUSER
+  CAIXA
+  CLIENTE
 }
-
 
 model Cliente {
-  id         Int      @id @default(autoincrement())
-  nome       String
-  email      String   @unique
-  password   String
-  cpf        String?  @unique
-  role       Role     @default(USER)
-  cep        String?
-  logradouro String?
-  cidade     String?
-  estado     String?
-  pedidos    Pedido[]
+  id           Int      @id @default(autoincrement())
+  nome         String
+  email        String?  @unique
+  password     String
+  role         Role     @default(CLIENTE)
+  cpf          String?  @unique
+  cep          String?
+  logradouro   String?
+  cidade       String?
+  estado       String?
+  telefone     String?
+  caixaPedidos Pedido[] @relation("CaixaPedidos")
+  pedidos      Pedido[] @relation("ClientePedidos")
+
+  pagamentos            Pagamento[]
+  auditoriasOperador    AuditoriaAcao[] @relation("OperadorAuditoria")
+  auditoriasAutorizador AuditoriaAcao[] @relation("AutorizadorAuditoria")
 }
+
+model AuditoriaAcao {
+  id            Int      @id @default(autoincrement())
+  acao          String // "SANGRIA", "SUPRIMENTO", "LIBERACAO", etc
+  valor         Float? // opcional (ex: liberação não usa valor)
+  detalhes      String? // JSON.stringify com informações adicionais
+  operadorId    Int // quem executou (CAIXA)
+  autorizadoPor Int? // ADMIN ou SUPERUSER 
+  referenciaId  Int? // <- NOVO
+  dadosExtras   Json? // <- NOVO
+  createdAt     DateTime @default(now())
+
+  operador    Cliente  @relation("OperadorAuditoria", fields: [operadorId], references: [id])
+  autorizador Cliente? @relation("AutorizadorAuditoria", fields: [autorizadoPor], references: [id])
+}
+
+model CategoriaProduto {
+  id        Int            @id @default(autoincrement())
+  nome      String
+  familiaId Int
+  familia   FamiliaProduto @relation(fields: [familiaId], references: [id])
+
+  produtos Produto[]
+  badges   BadgePromocional[]
+
+  @@unique([nome, familiaId])
+}
+
 
 model Produto {
-  id          Int          @id @default(autoincrement())
-  title       String       @unique
-  categoria   String?
-  description String
-  price       Float
-  image       String
-  estoque     Int          @default(0)
-  createdAt   DateTime     @default(now())
-  itens       ItemPedido[]
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String
+  price        Float
+  image        String
+  estoque      Int
+  createdAt    DateTime @default(now())
+  categoriaId  Int?
+  codigoBarras String?  @unique
+
+  itens     ItemPedido[]
+  categoria CategoriaProduto? @relation(fields: [categoriaId], references: [id])
+
+  promocoes Promocao[]         @relation("ProdutosPromocao")
+  badges    BadgePromocional[]
+
+  variacoes ProdutoVariacao[] // <-- ADICIONAR
 }
 
-model Pedido {
-  id              Int        @id @default(autoincrement())
-  numeroPedido    String
-  clienteId       Int
-  cliente         Cliente    @relation(fields: [clienteId], references: [id])
-  valorTotal      Float
-  status          String
-  stripeSessionId String     @unique
-  itens           ItemPedido[]
+model ProdutoVariacao {
+  id        Int     @id @default(autoincrement())
+  produtoId Int
+  cor       String? // preta, branca, azul marinho, etc.
+  tamanho   String? // PP, P, M, G, GG...
+  modelagem String? // normal, slim, oversized
+  gola      String? // careca, V
+  estoque   Int     @default(0)
+  sku       String? @unique // opcional, pode ser gerado automaticamente
+
+  produto Produto         @relation(fields: [produtoId], references: [id])
+  imagens ProdutoImagem[]
 }
 
+model ProdutoImagem {
+  id         Int     @id @default(autoincrement())
+  variacaoId Int
+  url        String
+  tipo       String? // frente, costas, detalhe, etc.
+  ordem      Int     @default(0)
+
+  variacao ProdutoVariacao @relation(fields: [variacaoId], references: [id])
+}
+
+model BadgePromocional {
+  id          Int     @id @default(autoincrement())
+  ativo       Boolean @default(true)
+  texto       String
+  icone       String?
+  valorMinimo Float?
+
+  categoriaId Int?
+  produtoId   Int?
+  produto     Produto?          @relation(fields: [produtoId], references: [id])
+  categoria   CategoriaProduto? @relation(fields: [categoriaId], references: [id])
+
+  createdAt DateTime @default(now())
+}
 
 model ItemPedido {
   id         Int     @id @default(autoincrement())
@@ -59,6 +128,167 @@ model ItemPedido {
   produtoId  Int
   quantidade Int
   valor      Float?
+  descricao    String?
+  valorUnitario Float?
+  promocaoId Int?
+  pedido     Pedido  @relation(fields: [pedidoId], references: [id])
   produto    Produto @relation(fields: [produtoId], references: [id])
-  pedido     Pedido  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
 }
+
+model Pedido {
+  id              Int                 @id @default(autoincrement())
+  numeroPedido    String              @unique
+  clienteId       Int?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  valorTotal      Float               @default(0)
+  status          String              @default("PENDENTE")
+  stripeSessionId String?             @unique
+  entregue        Boolean             @default(false)
+  caixaId         Int?
+  metodoPagamento String              @default("DESCONHECIDO")
+  comprovantes    ComprovanteEntrega?
+  fretes          Frete[]
+  itens           ItemPedido[]
+  caixa           Cliente?            @relation("CaixaPedidos", fields: [caixaId], references: [id])
+  cliente         Cliente?            @relation("ClientePedidos", fields: [clienteId], references: [id])
+  historicoStatus PedidoStatus[]
+  pagamentos      Pagamento[]
+}
+
+model Frete {
+  id               Int             @id @default(autoincrement())
+  pedidoId         Int
+  transportadoraId Int?
+  pesoMin          Float           @default(0)
+  pesoMax          Float           @default(999999)
+  valor            Float           @default(0)
+  prazoEntrega     Int             @default(3)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  pedido           Pedido          @relation(fields: [pedidoId], references: [id])
+  transportadora   Transportadora? @relation(fields: [transportadoraId], references: [id])
+}
+
+model Transportadora {
+  id          Int     @id @default(autoincrement())
+  numero      String? @unique
+  nome        String
+  cnpj        String
+  telefone    String
+  fretePadrao Float?
+  cep         String?
+  logradouro  String?
+  bairro      String?
+  cidade      String?
+  estado      String?
+  tipoVeiculo String?
+  fretes      Frete[]
+}
+
+model PedidoStatus {
+  id         Int      @id @default(autoincrement())
+  pedidoId   Int
+  status     String
+  dataStatus DateTime
+  pedido     Pedido   @relation(fields: [pedidoId], references: [id])
+}
+
+model ComprovanteEntrega {
+  id             Int      @id @default(autoincrement())
+  pedidoId       Int      @unique
+  nomeRecebedor  String?
+  fotoUrl        String
+  cloudinaryId   String?
+  createdAt      DateTime @default(now())
+  entregadorNome String   @default("Não informado")
+  numeroPedido   String?
+  pedido         Pedido   @relation(fields: [pedidoId], references: [id])
+}
+
+model VendaResumo {
+  id          Int      @id @default(autoincrement())
+  data        DateTime
+  totalVendas Float
+  qtdPedidos  Int
+  qtdProdutos Int
+}
+
+model FamiliaProduto {
+  id         Int                @id @default(autoincrement())
+  nome       String             @unique // Vestuário | Calçados | Acessórios
+  categorias CategoriaProduto[]
+}
+
+model Promocao {
+  id          Int      @id @default(autoincrement())
+  nome        String
+  desconto    Float
+  freteGratis Boolean
+  dataInicio  DateTime
+  dataFim     DateTime
+  createdAt   DateTime @default(now())
+
+  produtos Produto[] @relation("ProdutosPromocao")
+}
+
+model Sequencia {
+  id            Int      @id @default(1)
+  proximoNumero Int      @default(1)
+  updatedAt     DateTime @updatedAt
+}
+
+model Pagamento {
+  id            Int      @id @default(autoincrement())
+  pedidoId      Int
+  clienteId     Int?
+  forma         String
+  valor         Float
+  status        String   @default("PENDENTE")
+  parcelas      Int?
+  descricao     String?
+  codigoExterno String? // 👈 AQUI
+  criadoEm      DateTime @default(now())
+
+  // Stripe
+  stripePaymentIntentId String?
+  stripeStatus          String?
+
+  // PIX
+  pixCodigo       String?
+  pixQrCodeBase64 String?
+  pixTxid         String?
+  pixStatus       String?
+
+  // RELAÇÕES
+  pedido       Pedido             @relation(fields: [pedidoId], references: [id])
+  cliente      Cliente?           @relation(fields: [clienteId], references: [id])
+  parcelasList ParcelaPagamento[]
+}
+
+model ParcelaPagamento {
+  id            Int       @id @default(autoincrement())
+  pagamentoId   Int
+  numeroParcela Int // ex: 1, 2, 3
+  valor         Float
+  vencimento    DateTime
+  pago          Boolean   @default(false)
+  pagoEm        DateTime?
+
+  pagamentos Pagamento @relation(fields: [pagamentoId], references: [id])
+}
+
+model Empresa {
+  id Int @id @default(autoincrement())
+
+  nome     String
+  cnpj     String
+  endereco String
+  telefone String
+
+  mensagemCupom String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+

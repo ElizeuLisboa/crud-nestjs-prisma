@@ -2,8 +2,8 @@ import { ConfigService } from "@nestjs/config";
 import { PrismaClient } from "@prisma/client";
 import { PagamentosService } from "../src/pagamentos/pagamentos.service";
 //import { PagamentosService } from "./pagamentos.service";
-
-const prisma = new PrismaClient();
+import "./src/lib/prisma"; // Importa a instância do Prisma configurada
+// const prisma = new PrismaClient();
 
 // Criando ConfigService com variáveis de teste
 const configService = new ConfigService({

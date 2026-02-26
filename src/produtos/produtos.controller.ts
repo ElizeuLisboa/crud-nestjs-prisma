@@ -1,28 +1,29 @@
 import {
-  Get,
-  Query,
   Controller,
+  Get,
   Post,
   Body,
+  Query,
+  Param,
+  UploadedFile,
   UseGuards,
   UseInterceptors,
-  UploadedFile,
-  Request,
   BadRequestException,
-  Param,
   NotFoundException,
+  Request,
 } from "@nestjs/common";
-import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
-import { extname, join } from "path";
-import { ProdutosService } from "./produtos.service";
-import { Roles } from "src/auth/roles.decorator";
-import { PrismaClient } from "@prisma/client";
+import { extname } from "path";
 
+import { CreateProdutoDTO, ProdutosService } from "./produtos.service";
+import { JwtAuthGuard } from "../modules/auth/jwt-auth.guard";
+import { Roles } from "../modules/auth/roles.decorator";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Controller("produtos")
 export class ProdutosController {
+  private readonly prisma: PrismaService = new PrismaService();
   constructor(private readonly produtosService: ProdutosService) {}
 
   @Post()
@@ -31,79 +32,85 @@ export class ProdutosController {
   @UseInterceptors(
     FileInterceptor("imagem", {
       storage: diskStorage({
-        // destination: join(process.cwd(), "uploads", "produtos"),
         destination: "./uploads/produtos",
-        filename: (req, file, callback) => {
-          const uniqueSuffix =
-            Date.now() + "-" + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          const filename = `${file.fieldname}-${uniqueSuffix}${ext}`;
-
-          callback(null, filename);
+        filename: (_, file, callback) => {
+          const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
+          callback(
+            null,
+            `${file.fieldname}-${unique}${extname(file.originalname)}`,
+          );
         },
       }),
-      fileFilter: (req, file, cb) => {
+      fileFilter: (_, file, cb) => {
         if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
           return cb(
             new BadRequestException("Tipo de arquivo não suportado"),
-            false
+            false,
           );
         }
         cb(null, true);
       },
-    })
+    }),
   )
+  @Post()
   async create(
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: any,
-    @Request() req: any
+    @Body() dto: CreateProdutoDTO,
   ) {
-    if (req.user?.role !== "ADMIN" && req.user?.role !== "SUPERUSER") {
-      throw new BadRequestException(
-        "Apenas administradores podem cadastrar produtos."
-      );
+    if (!dto.categoriaNome || dto.categoriaNome.trim() === "") {
+      throw new BadRequestException("categoriaNome é obrigatório");
     }
 
-    const { title, description, price, imagemUrl } = body;
-
-    if (!file && !imagemUrl) {
-      throw new BadRequestException(
-        "Imagem (upload) ou imagemUrl é obrigatória."
-      );
-    }
-
-    const imagePath = file ? `/uploads/produtos/${file.filename}` : imagemUrl;
+    const imagePath = file ? `/uploads/produtos/${file.filename}` : dto.image;
 
     return this.produtosService.create({
-      title,
-      description,
-      price: parseFloat(price),
+      ...dto,
       image: imagePath,
+      price: Number(dto.price),
+      estoque: Number(dto.estoque),
+    });
+  }
+
+  @Get("barcode/:codigo")
+  findByBarcode(@Param("codigo") codigo: string) {
+    return this.produtosService.findByBarcode(codigo);
+  }
+
+  @Get("buscar")
+  buscar(@Query("termo") termo: string) {
+    if (!termo?.trim()) {
+      throw new BadRequestException("Nenhum termo informado");
+    }
+    return this.produtosService.buscarProdutos(termo);
+  }
+
+  @Get("familias")
+  async listarFamilias() {
+    return this.produtosService.listarFamilias();
+  }
+
+  @Get("categorias")
+  async listarCategorias() {
+    return this.produtosService.listarCategorias();
+  }
+
+  @Get()
+  async listar(
+    @Query("familia") familia?: string,
+    @Query("nome") nome?: string,
+  ) {
+    return this.produtosService.listar({
+      familia,
+      nome,
     });
   }
 
   @Get(":id")
-  async findOne(@Param("id") id: string) {
-    const produto = await this.produtosService.findOne(+id);
-    if (!produto) {
-      throw new NotFoundException(`Produto com ID ${id} não encontrado`);
+  findOne(@Param("id") id: string) {
+    const parsedId = Number(id);
+    if (isNaN(parsedId)) {
+      throw new BadRequestException("ID inválido");
     }
-    return produto;
+    return this.produtosService.findOne(parsedId);
   }
-
-  @Get()
-async findAll(@Query("categoria") categoria?: string, @Query("nome") nome?: string) {
-  console.log("👉 Query recebida no controller:", { categoria, nome });
-  return this.produtosService.findAll({ categoria, nome });
-}
-
-  // @Get()
-  // async findAll(
-  //   @Query("categoria") categoria?: string,
-  //   @Query("nome") nome?: string
-  // ) {
-  //   return this.produtosService.findAll({ categoria, nome });
-  // }
-
-
 }

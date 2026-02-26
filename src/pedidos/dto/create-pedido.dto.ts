@@ -8,6 +8,7 @@ export class ItemPedidoDto {
   @IsInt()
   @Min(1)
   quantidade!: number;
+
 }
 
 export class CreatePedidoDto {

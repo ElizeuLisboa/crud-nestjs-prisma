@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
+import "./src/lib/prisma" // Importa a instância do Prisma configurada
+// const prisma = new PrismaClient()
 
 async function atualizarPedidos() {
   const pedidos = await prisma.pedido.findMany({

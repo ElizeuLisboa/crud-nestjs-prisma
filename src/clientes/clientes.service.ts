@@ -1,13 +1,12 @@
 import {
   Injectable,
   NotFoundException,
-  ConflictException,
+  BadRequestException,
 } from "@nestjs/common";
-import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateClienteDto } from "./dto/create-cliente.dto";
+import { PrismaService } from "../prisma/prisma.service";
 import { UpdateClienteDto } from "./dto/update-cliente.dto";
 import * as bcrypt from "bcrypt";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { CreateClientePublicoDto } from "./dto/create-cliente-publico.dto";
 
 @Injectable()
 export class ClientesService {
@@ -21,63 +20,24 @@ export class ClientesService {
     const cliente = await this.prisma.cliente.findUnique({
       where: { id },
     });
+
     if (!cliente) {
       throw new NotFoundException(`Cliente com ID ${id} não encontrado`);
     }
+
     return cliente;
   }
 
-  async create(createClienteDto: CreateClienteDto) {
-    const hashedPassword = await bcrypt.hash(createClienteDto.senha, 10);
-
-    try {
-      return await this.prisma.cliente.create({
-        data: {
-          nome: createClienteDto.nome,
-          email: createClienteDto.email,
-          cpf: createClienteDto.cpf,
-          password: hashedPassword,
-          // role: createClienteDto.role,
-          role: createClienteDto.role ?? 'USER',
-          cep: createClienteDto.cep || null,
-          cidade: createClienteDto.cidade || null,
-          estado: createClienteDto.estado || null,
-        },
-      });
-    } catch (error) {
-      if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === "P2002"
-      ) {
-        const campo = Array.isArray(error.meta?.target)
-          ? error.meta.target.join(", ")
-          : "campo único";
-        throw new ConflictException(`Já existe um cliente com esse ${campo}.`);
-      }
-      throw error;
-    }
-  }
-
   async update(id: number, data: UpdateClienteDto) {
-    await this.findOne(id);
+    const updateData: any = { ...data };
 
-    const { senha, ...resto } = data;
-
-    const dadosParaAtualizar: any = { ...resto };
-
-    if (senha) {
-      const hashedPassword = await bcrypt.hash(senha, 10);
-      dadosParaAtualizar.password = hashedPassword;
+    if (data.password) {
+      updateData.password = await bcrypt.hash(data.password, 10);
     }
-
-    // Garante que campos de endereço sejam atualizados também
-    if (resto.cep === undefined) dadosParaAtualizar.cep = null;
-    if (resto.cidade === undefined) dadosParaAtualizar.cidade = null;
-    if (resto.estado === undefined) dadosParaAtualizar.estado = null;
 
     return this.prisma.cliente.update({
       where: { id },
-      data: dadosParaAtualizar,
+      data: updateData,
     });
   }
 
@@ -86,5 +46,78 @@ export class ClientesService {
     return this.prisma.cliente.delete({
       where: { id },
     });
+  }
+
+  async buscarPorCpf(cpf: string) {
+    return this.prisma.cliente.findUnique({
+      where: { cpf },
+    });
+  }
+
+  async cadastroRapido(data: {
+    nome: string;
+    email: string;
+    cpf: string;
+    telefone: string;
+  }) {
+    return this.prisma.cliente.create({
+      data: {
+        ...data,
+        password: await bcrypt.hash("123456@1234", 10), // 🔥 HASH AGORA
+        role: "CLIENTE",
+        cep: null,
+        logradouro: null,
+        cidade: null,
+        estado: null,
+      },
+    });
+  }
+
+  async atualizarCadastroRapido(cpf: string, data: any) {
+    const updateData = { ...data };
+
+    if (data.password) {
+      updateData.password = await bcrypt.hash(data.password, 10);
+    }
+
+    return this.prisma.cliente.update({
+      where: { cpf },
+      data: updateData,
+    });
+  }
+
+  async autoCadastro(dto: CreateClientePublicoDto) {
+    const existe = await this.prisma.cliente.findFirst({
+      where: {
+        OR: [{ email: dto.email }, { cpf: dto.cpf }],
+      },
+    });
+
+    if (existe) {
+      throw new BadRequestException("Email ou CPF já cadastrados");
+    }
+
+    const hash = await bcrypt.hash(dto.password, 10);
+
+    const cliente = await this.prisma.cliente.create({
+      data: {
+        nome: dto.nome,
+        email: dto.email,
+        cpf: dto.cpf,
+        telefone: dto.telefone,
+        cep: dto.cep,
+        logradouro: dto.logradouro,
+        cidade: dto.cidade,
+        estado: dto.estado,
+        password: hash,
+        role: "CLIENTE",
+      },
+    });
+
+    return {
+      id: cliente.id,
+      nome: cliente.nome,
+      email: cliente.email,
+    };
   }
 }

@@ -20,6 +20,18 @@
     "incremental": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*",
+    "auth-backup/auth.controller.ts",
+    "auth-backup/auth.module.ts",
+    "auth-backup/auth.service.ts",
+    "auth-backup/csrf.controller.ts",
+    "auth-backup/csrf.guard.ts",
+    "auth-backup/jwt.strategy.ts",
+    "auth-backup/login.dto.ts",
+    "auth-backup/roles.decorator.ts",
+    "auth-backup/user.decorator.ts",
+    "auth-backup/jwt-auth.guard.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,0 +1,129 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../prisma-client-sqlite"
+}
+
+enum Role {
+  SUPERUSER
+  ADMIN
+  USER
+}
+
+model Cliente {
+  id         Int      @id @default(autoincrement())
+  nome       String
+  email      String   @unique
+  password   String
+  cpf        String?  @unique
+  role       Role     @default(USER)
+  cep        String?
+  logradouro String?
+  cidade     String?
+  estado     String?
+  pedidos    Pedido[]
+}
+
+model Produto {
+  id          Int          @id @default(autoincrement())
+  title       String       @unique
+  categoria   String?
+  description String
+  price       Float
+  image       String
+  estoque     Int          @default(0)
+  createdAt   DateTime     @default(now())
+  itens       ItemPedido[]
+  // relação opcional com promoção
+  promocaoId  Int?
+  promocao    Promocao?    @relation(fields: [promocaoId], references: [id])
+}
+
+model Pedido {
+  id              Int          @id @default(autoincrement())
+  numeroPedido    String
+  clienteId       Int
+  cliente         Cliente      @relation(fields: [clienteId], references: [id])
+  itens           ItemPedido[]
+  valorTotal      Float
+  status          String
+  stripeSessionId String       @unique
+  createdAt       DateTime     @default(now())
+
+  // novas relações
+  frete           Frete?
+  historicoStatus PedidoStatus[]
+  comprovantes    ComprovanteEntrega[]
+}
+
+model ItemPedido {
+  id         Int       @id @default(autoincrement())
+  pedidoId   Int
+  produtoId  Int
+  quantidade Int
+  valor      Float?
+  promocaoId Int? // campo opcional
+  pedido     Pedido    @relation(fields: [pedidoId], references: [id])
+  produto    Produto   @relation(fields: [produtoId], references: [id])
+  promocao   Promocao? @relation(fields: [promocaoId], references: [id])
+}
+
+model Promocao {
+  id          Int          @id @default(autoincrement())
+  nome        String
+  desconto    Int
+  freteGratis Boolean
+  dataInicio  DateTime
+  dataFim     DateTime
+  itensPedido ItemPedido[] // ✅ relação inversa
+  Produto     Produto[]
+}
+
+model Frete {
+  id                 Int             @id @default(autoincrement())
+  pedidoId           Int             @unique
+  tipo               String
+  valor              Float
+  prazoEstimado      String
+  codigoRastreamento String?
+  transportadoraId   Int?
+  transportadora     Transportadora? @relation(fields: [transportadoraId], references: [id])
+  pedido             Pedido          @relation(fields: [pedidoId], references: [id])
+}
+
+model PedidoStatus {
+  id         Int      @id @default(autoincrement())
+  pedidoId   Int
+  status     String
+  dataStatus DateTime @default(now())
+  pedido     Pedido   @relation(fields: [pedidoId], references: [id])
+}
+
+model VendaResumo {
+  id          Int      @id @default(autoincrement())
+  data        DateTime @default(now())
+  totalVendas Float
+  qtdPedidos  Int
+  qtdProdutos Int
+}
+
+model Transportadora {
+  id       Int     @id @default(autoincrement())
+  nome     String
+  cnpj     String?
+  telefone String?
+  fretes   Frete[]
+}
+
+model ComprovanteEntrega {
+  id            Int      @id @default(autoincrement())
+  pedidoId      Int
+  nomeRecebedor String
+  fotoUrl       String
+  dataEntrega   DateTime @default(now())
+  pedido        Pedido   @relation(fields: [pedidoId], references: [id])
+}
