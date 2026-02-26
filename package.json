@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "dist/main.js",
   "scripts": {
-    "build": "npx nest build",
+    "build": "tsc -p tsconfig.build.json",
     "start": "nest start",
     "start:prod": "node dist/main.js",
     "postinstall": "prisma generate",
