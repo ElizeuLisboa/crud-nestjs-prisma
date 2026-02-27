@@ -1,4 +1,8 @@
-import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common';
+import { Express } from 'express';
+import { CanActivate, 
+  ExecutionContext, 
+  Injectable, 
+  ForbiddenException } from '@nestjs/common';
 import { Request } from 'express';
 
 @Injectable()

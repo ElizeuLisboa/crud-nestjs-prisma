@@ -9,6 +9,7 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import { memoryStorage } from "multer";
 import { ComprovanteService } from "./comprovante.service";
+import { Express } from 'express';
 
 @Controller("comprovantes")
 export class ComprovanteController {

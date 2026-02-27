@@ -1,3 +1,4 @@
+import { Express } from 'express';
 import { Controller, Get, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { randomBytes } from 'crypto';

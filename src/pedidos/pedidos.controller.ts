@@ -24,6 +24,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { Patch, Param } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ParseIntPipe } from "@nestjs/common";
+import { Express } from 'express';
 
 @Controller("pedidos")
 export class PedidosController {

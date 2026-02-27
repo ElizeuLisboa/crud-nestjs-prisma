@@ -9,7 +9,8 @@ import { CreatePedidoDto } from "./dto/create-pedido.dto";
 import { CriarPedidoDto } from "./dto/criar-pedido.dto";
 import { randomInt } from "crypto";
 import { Prisma, PrismaClient } from "@prisma/client";
-import Stripe from "stripe";
+import { Express } from 'express';
+// import Stripe from "stripe";
 
 type VendaItem = {
   produtoId: number;
@@ -26,13 +27,13 @@ type CriarVendaBody = {
 
 @Injectable()
 export class PedidosService {
-  private stripe: Stripe;
+  
 
-  constructor(private readonly prisma: PrismaService) {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-      apiVersion: "2022-11-15",
-    });
-  }
+  constructor(private readonly prisma: PrismaService) {}
+    // this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+    //   apiVersion: "2022-11-15",
+    // });
+  // }
 
   async create(data: CreatePedidoDto, clienteId: number) {
     const numeroPedido = String(randomInt(1000000, 9999999));
@@ -56,23 +57,23 @@ export class PedidosService {
     }, 0);
 
     // ✅ Cria sessão Stripe
-    const session = await this.stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: data.itens.map((item) => {
-        const produto = produtosMap.get(item.produtoId);
-        return {
-          price_data: {
-            currency: "brl",
-            product_data: { name: produto?.title ?? "" },
-            unit_amount: (produto?.price ?? 0) * 100, // valor em centavos
-          },
-          quantity: item.quantidade,
-        };
-      }),
-      mode: "payment",
-      success_url: `${process.env.FRONT_URL}/sucesso`,
-      cancel_url: `${process.env.FRONT_URL}/cancelado`,
-    });
+    // const session = await this.stripe.checkout.sessions.create({
+    //   payment_method_types: ["card"],
+    //   line_items: data.itens.map((item) => {
+    //     const produto = produtosMap.get(item.produtoId);
+    //     return {
+    //       price_data: {
+    //         currency: "brl",
+    //         product_data: { name: produto?.title ?? "" },
+    //         unit_amount: (produto?.price ?? 0) * 100, // valor em centavos
+    //       },
+    //       quantity: item.quantidade,
+    //     };
+    //   }),
+    //   mode: "payment",
+    //   success_url: `${process.env.FRONT_URL}/sucesso`,
+    //   cancel_url: `${process.env.FRONT_URL}/cancelado`,
+    // });
 
     // ✅ Transação: cria pedido + itens
     return this.prisma.$transaction(async (tx) => {
@@ -82,7 +83,8 @@ export class PedidosService {
           cliente: { connect: { id: clienteId } },
           valorTotal, // <-- nome ajustado conforme seu modelo
           status: "AGUARDANDO_PAGAMENTO",
-          stripeSessionId: session.id,
+          // stripeSessionId: sessionId, 
+
           itens: {
             create: data.itens.map((item) => {
               const produto = produtosMap.get(item.produtoId);

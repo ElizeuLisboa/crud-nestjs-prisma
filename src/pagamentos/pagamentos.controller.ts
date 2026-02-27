@@ -14,6 +14,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
+import { Express } from 'express';
 import { ConfigService } from "@nestjs/config";
 import { PagamentosService } from "./pagamentos.service";
 import { Request, Response } from "express";

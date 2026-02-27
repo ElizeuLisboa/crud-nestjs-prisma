@@ -1,8 +1,12 @@
 # Node
 node_modules
 dist
-.env
+migrations_old
 
+.env
+seed-*
+seed.*
+simular-pedidos.*
 # Logs
 logs
 *.log
