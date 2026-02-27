@@ -4,7 +4,7 @@ import {
   BadRequestException,
   UnauthorizedException,
 } from "@nestjs/common";
-import { PrismaService } from "src/prisma/prisma.service";
+import { PrismaService } from "../prisma/prisma.service";
 import { CreatePedidoDto } from "./dto/create-pedido.dto";
 import { CriarPedidoDto } from "./dto/criar-pedido.dto";
 import { randomInt } from "crypto";

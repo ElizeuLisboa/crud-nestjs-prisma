@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { PrismaService } from "src/prisma/prisma.service";
+import { PrismaService } from "../prisma/prisma.service";
 // import { CreateTransportadoraDto } from './dto/create-transportadora.dto';
 
 @Injectable()
@@ -24,17 +24,6 @@ export class TransportadoraService {
     },
   });
 }
-
-  // async create(data: { nome: string; cnpj?: string; telefone?: string }) {
-  //   // Forçando valores padrão caso cnpj ou telefone não sejam passados
-  //   const transportadoraData = {
-  //     nome: data.nome,
-  //     cnpj: data.cnpj ?? '',       // vazio se não informado
-  //     telefone: data.telefone ?? '', // vazio se não informado
-  //   };
-
-  //   return this.prisma.transportadora.create({ data: transportadoraData });
-  // }
 
   // Buscar todas as transportadoras
   async findAll() {
