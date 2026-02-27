@@ -12,7 +12,7 @@ import { PagarMercadoPagoDto } from "./dto/pagar-mercadopago.dto";
 @Injectable()
 export class PagamentosService {
   private readonly logger = new Logger(PagamentosService.name);
-  private readonly preference: Preference;
+  // private readonly preference: Preference;
 
   constructor(
     private readonly prisma: PrismaService,

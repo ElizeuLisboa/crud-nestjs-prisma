@@ -7,18 +7,28 @@ import { PagarMercadoPagoDto } from "../dto/pagar-mercadopago.dto";
 @Injectable()
 export class MercadoPagoService {
   private readonly logger = new Logger(MercadoPagoService.name);
-  private readonly payment: Payment;
-  private readonly preference: Preference;
-  private readonly prisma: PrismaService = new PrismaService();
 
-  constructor() {
-    const client = new MercadoPagoConfig({
-      accessToken: process.env.MP_ACCESS_TOKEN!,
+  private client;
+  private payment;
+  private preference;
+
+  constructor(private readonly prisma: PrismaService) {
+    this.client = new MercadoPagoConfig({
+      accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
     });
 
-    this.payment = new Payment(client);
-    this.preference = new Preference(client);
+    this.payment = new Payment(this.client);
+    this.preference = new Preference(this.client);
   }
+
+  // constructor() {
+  //   const client = new MercadoPagoConfig({
+  //     accessToken: process.env.MP_ACCESS_TOKEN!,
+  //   });
+
+  //   this.payment = new Payment(client);
+  //   this.preference = new Preference(client);
+  // }
 
   async buscarPagamentoPorId(paymentId: string) {
     try {
