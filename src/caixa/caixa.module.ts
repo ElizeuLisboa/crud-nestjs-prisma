@@ -4,7 +4,7 @@ import { CaixaController } from "./caixa.controller";
 import { PrismaModule } from "../prisma/prisma.module";
 
 import { PixModule } from "../pagamentos/pix/pix.module"; // 👈 IMPORTANTE
-import { PixService } from "@/pagamentos/pix/pix.service";
+import { PixService } from "../pagamentos/pix/pix.service";
 
 @Module({
   imports: [
