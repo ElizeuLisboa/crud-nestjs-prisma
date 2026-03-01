@@ -1,10 +1,10 @@
-// prisma/scripts/atualizarItemPedido.ts
 import { PrismaClient } from '@prisma/client'
-import "./src/lib/prisma" // Importa a instância do Prisma configurada
-// const prisma = new PrismaClient()
+import "./src/lib/prisma" 
+import "./atualizarValorTotalPedido"  // mexi para ficar assim
+// const prisma = new PrismaClient() // estava assim antes
 
 async function atualizarValores() {
-  const itens = await prisma.itemPedido.findMany({
+  const itens = await prisma.itemPedido.findMany({ // onde tem prisma esta assim
     include: { produto: true },
   })
 

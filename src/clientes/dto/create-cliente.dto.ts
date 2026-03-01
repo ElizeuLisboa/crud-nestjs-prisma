@@ -1,7 +1,13 @@
-import { IsEmail, IsOptional, ValidateIf, IsString, Length, MaxLength,
-  MinLength, IsEnum, } from "class-validator";
-import { Role } from "src/common/enums/role";
-import { IsCPF } from "src/validators/is-cpf.validator";
+import { IsEmail, 
+  IsOptional, 
+  ValidateIf, 
+  IsString, 
+  Length, 
+  MaxLength,
+  MinLength, 
+  IsEnum, } from "class-validator";
+import { Role } from "../../common/enums/role"; 
+import {IsCPF } from '../../validators/is-cpf.validator'
 
 export class CreateClienteDto {
   @IsString()

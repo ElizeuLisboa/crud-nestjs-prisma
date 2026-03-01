@@ -1,7 +1,7 @@
 import { IsEmail, IsOptional, ValidateIf, IsString, Length, MaxLength, MinLength,
   IsEnum, } from "class-validator";
 import { Role } from "@prisma/client";
-import { IsCPF } from "src/validators/is-cpf.validator";
+import { IsCPF } from "../../validators/is-cpf.validator";
 
 export class UpdateClienteDto {
   @IsOptional()

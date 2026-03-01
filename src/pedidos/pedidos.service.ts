@@ -10,7 +10,7 @@ import { CriarPedidoDto } from "./dto/criar-pedido.dto";
 import { randomInt } from "crypto";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { Express } from 'express';
-// import Stripe from "stripe";
+
 
 type VendaItem = {
   produtoId: number;

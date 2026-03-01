@@ -1,4 +1,3 @@
-// src/fretes/fretes.module.ts
 import { Module } from '@nestjs/common';
 import { FretesService } from './fretes.service';
 import { FretesController } from './fretes.controller';
