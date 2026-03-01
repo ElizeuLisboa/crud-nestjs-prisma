@@ -14,6 +14,7 @@ import { CaixaModule } from "./caixa/caixa.module";
 import { TransportadoraModule } from "./transportadoras/transportadora.module";
 import { PixModule } from "./pagamentos/pix/pix.module";
 import { AuditoriaModule } from "./auditoria/auditoria.module";
+import { AppController } from './app.controller';
 
 
 
@@ -36,5 +37,6 @@ import { AuditoriaModule } from "./auditoria/auditoria.module";
       storage: multer.memoryStorage(),
     }),
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
