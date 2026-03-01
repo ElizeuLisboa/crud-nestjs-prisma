@@ -21,7 +21,8 @@ import { Request, Response } from "express";
 import { PagamentoCreditoDTO } from "./dto/pagamento.dto";
 import { PagarMercadoPagoDto } from "./dto/pagar-mercadopago.dto";
 import { MercadoPagoService } from "./mercadopago/mercadopago.service";
-import { PrismaService } from "@/prisma/prisma.service";
+import { PrismaService } from "../prisma/prisma.service";
+
 
 @Controller("pagamentos")
 export class PagamentosController {
