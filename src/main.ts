@@ -1,4 +1,4 @@
-import  Express from 'express';
+import Express from "express";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { json, urlencoded } from "express";
@@ -17,13 +17,19 @@ async function bootstrap() {
       verify: (req: any, res, buffer) => {
         req.rawBody = buffer;
       },
-    })
+    }),
   );
 
   app.enableCors({
-    origin: process.env.FRONT_URL,
+    origin: ["http://localhost:3000", 
+    "https://pdv-frontend-1xyf.onrender.com"],
     credentials: true,
   });
+
+  // app.enableCors({
+  //   origin: process.env.FRONT_URL,
+  //   credentials: true,
+  // });
 
   app.use(cookieParser());
 
@@ -31,7 +37,7 @@ async function bootstrap() {
     new ValidationPipe({
       transform: true,
       whitelist: true,
-    })
+    }),
   );
 
   const port = process.env.PORT || 3000;
