@@ -3,6 +3,8 @@ node_modules
 dist
 migrations_old
 
+
+
 .env
 seed-*
 seed.*

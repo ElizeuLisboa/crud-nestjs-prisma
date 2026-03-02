@@ -17,6 +17,8 @@ enum Role {
 
 model Cliente {
   id           Int      @id @default(autoincrement())
+  empresaId    Int      @default(1)
+  empresa      Empresa  @relation(fields: [empresaId], references: [id])
   nome         String
   email        String?  @unique
   password     String
@@ -286,7 +288,7 @@ model Empresa {
   endereco String
   telefone String
 
-  mensagemCupom String?
+  clientes Cliente[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

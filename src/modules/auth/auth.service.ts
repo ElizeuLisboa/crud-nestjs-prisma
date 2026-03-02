@@ -9,18 +9,39 @@ import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../../prisma/prisma.service";
 import { AuthController } from "./auth.controller";
 // import * as bcrypt from "bcryptjs";
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from "bcrypt";
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwtService: JwtService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
   async validarUsuario(email: string, senha: string) {
-    const cliente = await this.prisma.cliente.findUnique({ where: { email } });
-    if (!cliente) throw new UnauthorizedException("Usuário não encontrado");
+    const cliente = await this.prisma.cliente.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        password: true,
+        role: true,
+        cep: true,
+        cidade: true,
+        estado: true,
+        empresaId: true, // 👈 IMPORTANTE
+      },
+    });
+
+    if (!cliente) {
+      throw new UnauthorizedException("Usuário não encontrado");
+    }
 
     const senhaCorreta = await bcrypt.compare(senha, cliente.password);
-    if (!senhaCorreta) throw new UnauthorizedException("Senha incorreta");
+    if (!senhaCorreta) {
+      throw new UnauthorizedException("Senha incorreta");
+    }
 
     return cliente;
   }
@@ -35,6 +56,7 @@ export class AuthService {
       email: cliente.email,
       nome: cliente.nome,
       role: cliente.role,
+      empresaId: cliente.empresaId,
       cep: cliente.cep,
       cidade: cliente.cidade,
       estado: cliente.estado,
@@ -48,6 +70,7 @@ export class AuthService {
         nome: cliente.nome,
         email: cliente.email,
         role: cliente.role,
+        empresaId: cliente.empresaId, //
         cep: cliente.cep,
         cidade: cliente.cidade,
         estado: cliente.estado,
