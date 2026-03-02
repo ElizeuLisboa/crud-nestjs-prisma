@@ -21,12 +21,12 @@ async function bootstrap() {
   );
 
   app.enableCors({
-  origin: process.env.FRONT_URL?.split(",") || [],
-  credentials: true,
-});
+    origin: process.env.FRONT_URL?.split(",") || [],
+    credentials: true,
+  });
 
   // app.enableCors({
-  //   origin: ["http://localhost:3000", 
+  //   origin: ["http://localhost:3000",
   //   "https://pdv-frontend-1xyf.onrender.com"],
   //   credentials: true,
   // });
