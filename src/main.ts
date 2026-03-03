@@ -1,4 +1,3 @@
-import Express from "express";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { json, urlencoded } from "express";
@@ -21,9 +20,15 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: process.env.FRONT_URL?.split(",") || [],
+    origin: ["http://localhost:3000", 
+    "https://pdv-frontend-1xyf.onrender.com"],
     credentials: true,
   });
+
+  // app.enableCors({
+  //   origin: process.env.FRONT_URL?.split(",") || [],
+  //   credentials: true,
+  // });
 
   // app.enableCors({
   //   origin: ["http://localhost:3000",
