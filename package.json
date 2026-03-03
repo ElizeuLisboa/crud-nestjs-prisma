@@ -12,6 +12,9 @@
     "start:dev": "nest start --watch",
     "postinstall": "prisma generate"
   },
+  "prisma": {
+    "seed": "ts-node src/prisma/seed.ts"
+  },
   "dependencies": {
     "@nestjs/common": "10.4.22",
     "@nestjs/config": "3.2.3",
@@ -46,6 +49,7 @@
     "@nestjs/cli": "11.0.10",
     "@types/bcryptjs": "^2.4.6",
     "prisma": "6.19.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.0.0"
   }
 }

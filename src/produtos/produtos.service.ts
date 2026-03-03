@@ -30,15 +30,41 @@ export class ProdutosService {
         estoque: data.estoque,
         image: data.image,
         codigoBarras: data.codigoBarras,
-        // ✅ CONEXÃO PELO NOME (campo @unique)
+
         categoria: {
           connect: {
             id: data.categoriaId,
           },
         },
+
+        empresa: {
+          connect: { id: 1 }, // 👈 temporário
+        },
       },
     });
   }
+
+  // async create(data: CreateProdutoDTO) {
+  //   return this.prisma.produto.create({
+  //     data: {
+  //       title: data.title,
+  //       description: data.description,
+  //       price: data.price,
+  //       estoque: data.estoque,
+  //       image: data.image,
+  //       codigoBarras: data.codigoBarras,
+  //       // ✅ CONEXÃO PELO NOME (campo @unique)
+  //       categoria: {
+  //         connect: {
+  //           id: data.categoriaId,
+  //         },
+  //         empresa: {
+  //           connect: { id: 1 }, // temporário para compilar
+  //         },
+  //       },
+  //     },
+  //   });
+  // }
 
   async findByBarcode(codigo: string) {
     if (!codigo || codigo.trim() === "") return null;
@@ -109,7 +135,6 @@ export class ProdutosService {
       },
     });
   }
-
 
   async findAll(filtros: {
     familiaId?: number;
