@@ -22,6 +22,10 @@ export class ComprovanteService {
     }
 
     // ✅ Cria ou atualiza o comprovante de entrega
+    // const pedido = await this.prisma.pedido.findUnique({
+    //   where: { id: dados.pedidoId },
+    // });
+
     const comprovante = await this.prisma.comprovanteEntrega.upsert({
       where: { pedidoId: dados.pedidoId },
       update: {
@@ -33,14 +37,33 @@ export class ComprovanteService {
       },
       create: {
         pedidoId: dados.pedidoId,
-        numeroPedido: pedido.numeroPedido,
+        numeroPedido: pedido?.numeroPedido,
         nomeRecebedor: dados.nomeRecebedor ?? "Não Informado",
         entregadorNome: dados.entregadorNome ?? "Não Informado",
         fotoUrl: dados.fotoUrl,
         cloudinaryId: dados.cloudinaryId,
       },
     });
-    
+
+    // const comprovante = await this.prisma.comprovanteEntrega.upsert({
+    //   where: { pedidoId: dados.pedidoId },
+    //   update: {
+    //     nomeRecebedor: dados.nomeRecebedor ?? "Não Informado",
+    //     entregadorNome: dados.entregadorNome ?? "Não Informado",
+    //     fotoUrl: dados.fotoUrl,
+    //     cloudinaryId: dados.cloudinaryId,
+    //     createdAt: new Date(),
+    //   },
+    //   create: {
+    //     pedidoId: dados.pedidoId,
+    //     numeroPedido: pedido.numeroPedido,
+    //     nomeRecebedor: dados.nomeRecebedor ?? "Não Informado",
+    //     entregadorNome: dados.entregadorNome ?? "Não Informado",
+    //     fotoUrl: dados.fotoUrl,
+    //     cloudinaryId: dados.cloudinaryId,
+    //   },
+    // });
+
     console.log("✅ Comprovante criado:", comprovante);
 
     // ✅ Atualiza o pedido para status ENTREGUE

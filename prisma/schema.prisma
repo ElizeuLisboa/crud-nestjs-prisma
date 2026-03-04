@@ -23,9 +23,12 @@ model Empresa {
   endereco String
   telefone String
 
-  clientes   Cliente[]
-  categorias CategoriaProduto[]
-  produtos   Produto[]
+  clientes        Cliente[]
+  categorias      CategoriaProduto[]
+  produtos        Produto[]
+  transportadoras Transportadora[] // 👈 ADICIONAR
+  pedidos         Pedido[]
+  pagamentos      Pagamento[]  // 👈 adicionar
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -37,10 +40,10 @@ model Cliente {
   empresa   Empresa @relation(fields: [empresaId], references: [id])
 
   nome     String
-  email    String?  @unique
+  email    String? @unique
   password String
-  role     Role     @default(CLIENTE)
-  cpf      String?  @unique
+  role     Role    @default(CLIENTE)
+  cpf      String? @unique
 
   cep        String?
   logradouro String?
@@ -79,8 +82,8 @@ model FamiliaProduto {
 }
 
 model CategoriaProduto {
-  id        Int     @id @default(autoincrement())
-  nome      String
+  id   Int    @id @default(autoincrement())
+  nome String
 
   empresaId Int
   empresa   Empresa @relation(fields: [empresaId], references: [id])
@@ -95,13 +98,13 @@ model CategoriaProduto {
 }
 
 model Produto {
-  id        Int     @id @default(autoincrement())
-  title     String
+  id          Int      @id @default(autoincrement())
+  title       String
   description String
-  price     Float
-  image     String
-  estoque   Int
-  createdAt DateTime @default(now())
+  price       Float
+  image       String
+  estoque     Int
+  createdAt   DateTime @default(now())
 
   empresaId Int
   empresa   Empresa @relation(fields: [empresaId], references: [id])
@@ -112,7 +115,7 @@ model Produto {
   codigoBarras String? @unique
 
   itens     ItemPedido[]
-  promocoes Promocao[] @relation("ProdutosPromocao")
+  promocoes Promocao[]         @relation("ProdutosPromocao")
   badges    BadgePromocional[]
   variacoes ProdutoVariacao[]
 }
@@ -128,22 +131,22 @@ model ProdutoVariacao {
   estoque   Int     @default(0)
   sku       String? @unique
 
-  produto Produto @relation(fields: [produtoId], references: [id])
+  produto Produto         @relation(fields: [produtoId], references: [id])
   imagens ProdutoImagem[]
 }
 
 model ProdutoImagem {
-  id         Int @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   variacaoId Int
   url        String
   tipo       String?
-  ordem      Int @default(0)
+  ordem      Int     @default(0)
 
   variacao ProdutoVariacao @relation(fields: [variacaoId], references: [id])
 }
 
 model BadgePromocional {
-  id          Int @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   ativo       Boolean @default(true)
   texto       String
   icone       String?
@@ -159,18 +162,20 @@ model BadgePromocional {
 }
 
 model Pedido {
-  id           Int @id @default(autoincrement())
+  id           Int    @id @default(autoincrement())
   numeroPedido String @unique
+  empresaId Int
+  empresa   Empresa @relation(fields: [empresaId], references: [id])
 
   clienteId Int?
   caixaId   Int?
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  valorTotal Float    @default(0)
-  status     String   @default("PENDENTE")
-  entregue   Boolean  @default(false)
-  metodoPagamento String @default("DESCONHECIDO")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  valorTotal      Float    @default(0)
+  status          String   @default("PENDENTE")
+  entregue        Boolean  @default(false)
+  metodoPagamento String   @default("DESCONHECIDO")
 
   cliente Cliente? @relation("ClientePedidos", fields: [clienteId], references: [id])
   caixa   Cliente? @relation("CaixaPedidos", fields: [caixaId], references: [id])
@@ -183,12 +188,12 @@ model Pedido {
 }
 
 model ItemPedido {
-  id         Int @id @default(autoincrement())
-  pedidoId   Int
-  produtoId  Int
-  quantidade Int
-  valor      Float?
-  descricao  String?
+  id            Int     @id @default(autoincrement())
+  pedidoId      Int
+  produtoId     Int
+  quantidade    Int
+  valor         Float?
+  descricao     String?
   valorUnitario Float?
 
   pedido  Pedido  @relation(fields: [pedidoId], references: [id])
@@ -196,7 +201,7 @@ model ItemPedido {
 }
 
 model PedidoStatus {
-  id         Int @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   pedidoId   Int
   status     String
   dataStatus DateTime
@@ -205,19 +210,20 @@ model PedidoStatus {
 }
 
 model ComprovanteEntrega {
-  id        Int @id @default(autoincrement())
-  pedidoId  Int @unique
-  fotoUrl   String
-  cloudinaryId String?
-  nomeRecebedor String?
-  entregadorNome String @default("Não informado")
-  createdAt DateTime @default(now())
+  id             Int      @id @default(autoincrement())
+  pedidoId       Int      @unique
+  numeroPedido   String?
+  fotoUrl        String
+  cloudinaryId   String?
+  nomeRecebedor  String?
+  entregadorNome String   @default("Não informado")
+  createdAt      DateTime @default(now())
 
   pedido Pedido @relation(fields: [pedidoId], references: [id])
 }
 
 model Frete {
-  id               Int @id @default(autoincrement())
+  id               Int  @id @default(autoincrement())
   pedidoId         Int
   transportadoraId Int?
 
@@ -234,46 +240,74 @@ model Frete {
 }
 
 model Transportadora {
-  id       Int @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
+  empresaId Int
+  empresa   Empresa @relation(fields: [empresaId], references: [id])
+  
+  numero   String? @unique
   nome     String
   cnpj     String
   telefone String
+
+  fretePadrao Float? @default(0)
+
+  cep        String?
+  logradouro String?
+  bairro     String?
+  cidade     String?
+  estado     String?
+
+  tipoVeiculo String?
 
   fretes Frete[]
 }
 
 model Pagamento {
   id        Int @id @default(autoincrement())
+
+  empresaId Int
+  empresa   Empresa @relation(fields: [empresaId], references: [id])
+
   pedidoId  Int
   clienteId Int?
 
-  forma   String
-  valor   Float
-  status  String @default("PENDENTE")
-  parcelas Int?
+  forma  String
+  valor  Float
+  status String @default("PENDENTE")
+
+  parcelas  Int?
+  descricao String?
+
+  codigoExterno String? @unique
 
   criadoEm DateTime @default(now())
 
-  pedido  Pedido  @relation(fields: [pedidoId], references: [id])
+  pixCodigo       String?
+  pixQrCodeBase64 String?
+  pixTxid         String?
+  pixStatus       String?
+
+  pedido  Pedido   @relation(fields: [pedidoId], references: [id])
   cliente Cliente? @relation(fields: [clienteId], references: [id])
 
   parcelasList ParcelaPagamento[]
 }
 
 model ParcelaPagamento {
-  id            Int @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   pagamentoId   Int
   numeroParcela Int
   valor         Float
   vencimento    DateTime
-  pago          Boolean @default(false)
+  pago          Boolean   @default(false)
   pagoEm        DateTime?
 
   pagamento Pagamento @relation(fields: [pagamentoId], references: [id])
 }
 
 model Promocao {
-  id          Int @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   nome        String
   desconto    Float
   freteGratis Boolean
@@ -282,4 +316,10 @@ model Promocao {
   createdAt   DateTime @default(now())
 
   produtos Produto[] @relation("ProdutosPromocao")
+}
+
+model Sequencia {
+  id            Int      @id @default(1)
+  proximoNumero Int      @default(1)
+  updatedAt     DateTime @updatedAt
 }

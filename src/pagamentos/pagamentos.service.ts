@@ -8,6 +8,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { MercadoPagoService } from "./mercadopago/mercadopago.service";
 import { Preference } from "mercadopago";
 import { PagarMercadoPagoDto } from "./dto/pagar-mercadopago.dto";
+import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class PagamentosService {
@@ -60,11 +61,10 @@ export class PagamentosService {
     const pedidoId = Number(payment?.external_reference);
     if (!pedidoId) return;
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const existente = await tx.pagamento.findFirst({
         where: { codigoExterno: mpId },
       });
-
       if (!existente) {
         await tx.pagamento.create({
           data: {
@@ -75,6 +75,7 @@ export class PagamentosService {
             parcelas: payment?.installments ?? 1,
             descricao: "Pagamento Mercado Pago (webhook)",
             codigoExterno: mpId,
+            empresaId: 1, // empresa padrão
           },
         });
       } else {
@@ -139,7 +140,7 @@ export class PagamentosService {
 
     console.log("📌 Status atual no banco:", pagamento.status);
     if (pagamento.status !== "PAGO") {
-       console.log("⚡ Chamando simularPixPago...");
+      console.log("⚡ Chamando simularPixPago...");
       await this.simularPixPago(txid);
     }
 
@@ -154,23 +155,6 @@ export class PagamentosService {
       valor: Atualizado?.valor,
     };
   }
-
-  // async verificarStatusPix(txid: string) {
-  //   const pagamento = await this.prisma.pagamento.findFirst({
-  //     where: { pixTxid: txid },
-  //     include: { pedido: true },
-  //   });
-
-  //   if (!pagamento) {
-  //     throw new NotFoundException("Pagamento não encontrado");
-  //   }
-
-  //   return {
-  //     status: pagamento.status,
-  //     pedidoId: pagamento.pedidoId,
-  //     valor: pagamento.valor,
-  //   };
-  // }
 
   async processarWebhookMP(evento: any) {
     const txid = evento?.data?.id || evento?.txid;

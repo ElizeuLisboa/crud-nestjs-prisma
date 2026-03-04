@@ -1,20 +1,3 @@
-// import { IsString, IsOptional, IsNumber } from 'class-validator';
-
-// export class CreateTransportadoraDto {
-//   @IsString()
-//   nome: string;
-
-//   @IsString()
-//   cnpj: string;
-
-//   @IsString()
-//   telefone: string;
-
-//   @IsOptional()
-//   @IsNumber({}, { message: "frete deve ser um número" })
-//   frete?: number;
-// }
-
 import { IsString, IsOptional, IsNumber } from "class-validator";
 
 export class CreateTransportadoraDto {

@@ -59,8 +59,14 @@ export class CaixaService {
     }, 0);
 
     return this.prisma.$transaction(async (tx) => {
+      const seq = await tx.sequencia.update({
+        where: { id: 1 },
+        data: {
+          proximoNumero: { increment: 1 },
+        },
+      });
       let clienteValido: number | null = null;
-      console.log("clienteId recebido:", clienteId);  
+      console.log("clienteId recebido:", clienteId);
       if (clienteId) {
         const existe = await tx.cliente.findUnique({
           where: { id: clienteId },
@@ -68,20 +74,24 @@ export class CaixaService {
         clienteValido = existe ? clienteId : null;
       }
 
-      // 🔥 3️⃣ CRIAR PEDIDO
+      const numeroPedido = `PDV-${String(seq.proximoNumero).padStart(6, "0")}`;
+      // const numeroPedido = `PDV-${Date.now()}`;
+
       const pedido = await tx.pedido.create({
         data: {
-          numeroPedido: `PDV-${Date.now()}`,
-          clienteId: clienteValido,
-          caixaId: operadorId,
-          valorTotal: valorTotal ?? totalCalculado,
-          metodoPagamento,
-          status:
-            metodoPagamento === "PIX" ? "AGUARDANDO_PAGAMENTO" : "FINALIZADO",
-            
+          numeroPedido,
+          empresaId: 1, // necessário agora
+
+          cliente: clienteId,
+          //cliente: { connect: { id: clienteId } },
+
+          valorTotal,
+          status: "AGUARDANDO_PAGAMENTO",
+
           itens: {
             create: itens.map((i: any) => {
               const id = i.produtoId ?? i.id;
+
               const produto = produtos.find((p) => p.id === id)!;
 
               return {
@@ -93,6 +103,10 @@ export class CaixaService {
               };
             }),
           },
+        },
+        include: {
+          cliente: true,
+          itens: { include: { produto: true } },
         },
       });
 
@@ -122,6 +136,7 @@ export class CaixaService {
           valor: valorTotal ?? totalCalculado,
           status: metodoPagamento === "PIX" ? "PENDENTE" : "PAGO",
           parcelas: metodoPagamento === "CREDITO" ? parcelas : 1,
+          empresaId: 1, // empresa padrão por enquanto
         },
       });
 

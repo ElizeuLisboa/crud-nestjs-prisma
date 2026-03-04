@@ -7,6 +7,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { UpdateClienteDto } from "./dto/update-cliente.dto";
 import * as bcrypt from "bcrypt";
 import { CreateClientePublicoDto } from "./dto/create-cliente-publico.dto";
+import { PrismaClient, Role } from "@prisma/client";
 
 @Injectable()
 export class ClientesService {
@@ -63,8 +64,13 @@ export class ClientesService {
     return this.prisma.cliente.create({
       data: {
         ...data,
-        password: await bcrypt.hash("123456@1234", 10), // 🔥 HASH AGORA
-        role: "CLIENTE",
+        password: await bcrypt.hash("123456@1234", 10),
+        role: Role.CLIENTE,
+
+        empresa: {
+          connect: { id: 1 }, // empresa padrão
+        },
+
         cep: null,
         logradouro: null,
         cidade: null,
@@ -72,6 +78,24 @@ export class ClientesService {
       },
     });
   }
+  // async cadastroRapido(data: {
+  //   nome: string;
+  //   email: string;
+  //   cpf: string;
+  //   telefone: string;
+  // }) {
+  //   return this.prisma.cliente.create({
+  //     data: {
+  //       ...data,
+  //       password: await bcrypt.hash("123456@1234", 10), // 🔥 HASH AGORA
+  //       role: Role.CLIENTE,
+  //       cep: null,
+  //       logradouro: null,
+  //       cidade: null,
+  //       estado: null,
+  //     },
+  //   });
+  // }
 
   async atualizarCadastroRapido(cpf: string, data: any) {
     const updateData = { ...data };
@@ -105,6 +129,9 @@ export class ClientesService {
         email: dto.email,
         cpf: dto.cpf,
         telefone: dto.telefone,
+        empresa: {
+          connect: { id: 1 }, // empresa padrão
+        },
         cep: dto.cep,
         logradouro: dto.logradouro,
         cidade: dto.cidade,
