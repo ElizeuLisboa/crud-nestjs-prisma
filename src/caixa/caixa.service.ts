@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { PixService } from "../pagamentos/pix/pix.service";
 import console from "console";
+import { User } from "mercadopago";
 
 @Injectable()
 export class CaixaService {
@@ -80,7 +81,7 @@ export class CaixaService {
       const pedido = await tx.pedido.create({
         data: {
           numeroPedido,
-          empresaId: 1, // necessário agora
+          empresaId: User.empresaId, // necessário agora
 
           cliente: clienteId,
           //cliente: { connect: { id: clienteId } },
@@ -95,6 +96,8 @@ export class CaixaService {
               const produto = produtos.find((p) => p.id === id)!;
 
               return {
+                empresaId: User.empresaId,
+                clienteId,
                 produtoId: id,
                 quantidade: i.quantidade,
                 valor: produto.price,

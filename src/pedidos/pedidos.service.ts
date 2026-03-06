@@ -21,11 +21,20 @@ export class PedidosService {
     });
 
     const numero = String(seq.proximoNumero).padStart(6, "0");
-
     return `PDV-${numero}`;
   }
 
-  async create(data: CreatePedidoDto, clienteId: number) {
+  // ====================================================
+  // CRIAR PEDIDO (SITE)
+  // ====================================================
+
+  async create(data: CreatePedidoDto, user: any) {
+    if (!user?.id) {
+      throw new UnauthorizedException("Usuário não identificado");
+    }
+
+    const empresaId = user.empresaId;
+
     const produtoIds = data.itens.map((item) => item.produtoId);
 
     const produtos = await this.prisma.produto.findMany({
@@ -33,7 +42,7 @@ export class PedidosService {
     });
 
     if (produtos.length !== produtoIds.length) {
-      throw new Error("Um ou mais produtos não existem");
+      throw new BadRequestException("Um ou mais produtos não existem");
     }
 
     const produtosMap = new Map(produtos.map((p) => [p.id, p]));
@@ -46,24 +55,23 @@ export class PedidosService {
     return this.prisma.$transaction(async (tx) => {
       const numeroPedido = await this.gerarNumeroPedido(tx);
 
-      const pedido = await tx.pedido.create({
+      return tx.pedido.create({
         data: {
           numeroPedido,
-          empresaId: 1,
-          clienteId,
+          empresaId,
+          clienteId: user.id,
           valorTotal,
           status: "AGUARDANDO_PAGAMENTO",
 
           itens: {
             create: data.itens.map((item) => {
               const produto = produtosMap.get(item.produtoId);
-              const valorItem =
-                (produto?.price ?? 0) * item.quantidade;
 
               return {
+                empresaId,
                 produtoId: item.produtoId,
                 quantidade: item.quantidade,
-                valor: valorItem,
+                valor: (produto?.price ?? 0) * item.quantidade,
               };
             }),
           },
@@ -74,15 +82,19 @@ export class PedidosService {
           itens: { include: { produto: true } },
         },
       });
-
-      return pedido;
     });
   }
+
+  // ====================================================
+  // CRIAR PEDIDO PELO CLIENTE LOGADO
+  // ====================================================
 
   async criarPedido(user: any, body: CriarPedidoDto) {
     if (!user?.id) {
       throw new UnauthorizedException("Usuário não identificado");
     }
+
+    const empresaId = user.empresaId;
 
     return this.prisma.$transaction(async (tx) => {
       const numeroPedido = await this.gerarNumeroPedido(tx);
@@ -90,12 +102,13 @@ export class PedidosService {
       const pedido = await tx.pedido.create({
         data: {
           numeroPedido,
-          empresaId: 1,
+          empresaId,
           clienteId: user.id,
           status: "PENDENTE",
 
           itens: {
             create: body.itens.map((item) => ({
+              empresaId,
               produtoId: item.produtoId,
               quantidade: item.quantidade,
               valor: item.preco,
@@ -109,13 +122,14 @@ export class PedidosService {
       return {
         pedidoId: pedido.id,
         numeroPedido: pedido.numeroPedido,
-        empresa: empresa ?? {
-          nome: "SUA EMPRESA AQUI",
-          cnpj: "00.000.000/0001-00",
-        },
+        empresa,
       };
     });
   }
+
+  // ====================================================
+  // LISTAR
+  // ====================================================
 
   async findAll() {
     return this.prisma.pedido.findMany({
@@ -150,6 +164,10 @@ export class PedidosService {
     });
   }
 
+  // ====================================================
+  // CONFIRMAR ENTREGA
+  // ====================================================
+
   async confirmarEntrega(
     pedidoId: number,
     nomeRecebedor: string,
@@ -169,7 +187,6 @@ export class PedidosService {
     }
 
     const fotoUrl = `/uploads/${file.filename}`;
-    const cloudinaryId = file.filename;
 
     const existing =
       await this.prisma.comprovanteEntrega.findUnique({
@@ -185,7 +202,6 @@ export class PedidosService {
           nomeRecebedor,
           entregadorNome,
           fotoUrl,
-          cloudinaryId,
         },
       });
     } else {
@@ -195,7 +211,6 @@ export class PedidosService {
           nomeRecebedor,
           entregadorNome,
           fotoUrl,
-          cloudinaryId,
         },
       });
     }
@@ -215,7 +230,17 @@ export class PedidosService {
     };
   }
 
-  async criarVendaCaixa(data: CreatePedidoDto, clienteId: number) {
+  // ====================================================
+  // VENDA PELO CAIXA
+  // ====================================================
+
+  async criarVendaCaixa(data: CreatePedidoDto, user: any) {
+    if (!user?.id) {
+      throw new UnauthorizedException("Usuário não identificado");
+    }
+
+    const empresaId = user.empresaId;
+
     const produtoIds = data.itens.map((item) => item.produtoId);
 
     const produtos = await this.prisma.produto.findMany({
@@ -235,8 +260,8 @@ export class PedidosService {
       return tx.pedido.create({
         data: {
           numeroPedido,
-          empresaId: 1,
-          clienteId,
+          empresaId,
+          clienteId: user.id,
           valorTotal,
           status: "PAGO",
 
@@ -245,11 +270,10 @@ export class PedidosService {
               const produto = produtosMap.get(item.produtoId);
 
               return {
-                empresaId: empresaId,
+                empresaId,
                 produtoId: item.produtoId,
                 quantidade: item.quantidade,
-                valor:
-                  (produto?.price ?? 0) * item.quantidade,
+                valor: (produto?.price ?? 0) * item.quantidade,
               };
             }),
           },
@@ -263,15 +287,16 @@ export class PedidosService {
     });
   }
 
+  // ====================================================
+  // BUSCAR PEDIDO
+  // ====================================================
+
   async buscarPorId(id: number) {
     const pedido = await this.prisma.pedido.findUnique({
       where: { id },
-
       include: {
         itens: {
-          include: {
-            produto: true,
-          },
+          include: { produto: true },
         },
       },
     });
@@ -289,7 +314,6 @@ export class PedidosService {
         id: item.id,
         quantidade: item.quantidade,
         valor: item.valor,
-
         produto: {
           title: item.produto?.title || "Produto",
         },
