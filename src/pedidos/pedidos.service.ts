@@ -245,6 +245,7 @@ export class PedidosService {
               const produto = produtosMap.get(item.produtoId);
 
               return {
+                empresaId: empresaId,
                 produtoId: item.produtoId,
                 quantidade: item.quantidade,
                 valor:
