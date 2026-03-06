@@ -7,201 +7,165 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  ADMIN
-  SUPERUSER
-  CAIXA
-  CLIENTE
-}
-
 model Empresa {
-  id Int @id @default(autoincrement())
-
-  nome     String
-  cnpj     String
-  endereco String
-  telefone String
-
-  clientes        Cliente[]
+  id              Int                @id @default(autoincrement())
+  nome            String
+  cnpj            String
+  endereco        String
+  telefone        String
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
   categorias      CategoriaProduto[]
-  produtos        Produto[]
-  transportadoras Transportadora[] // 👈 ADICIONAR
+  clientes        Cliente[]
+  itensPedido     ItemPedido[]
+  pagamentos      Pagamento[]
   pedidos         Pedido[]
-  itensPedido     ItemPedido[] 
-  pagamentos      Pagamento[]  // 👈 adicionar
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  produtos        Produto[]
+  transportadoras Transportadora[]
 }
 
 model Cliente {
-  id        Int     @id @default(autoincrement())
-  empresaId Int
-  empresa   Empresa @relation(fields: [empresaId], references: [id])
-
-  nome     String
-  email    String? @unique
-  password String
-  role     Role    @default(CLIENTE)
-  cpf      String? @unique
-
-  cep        String?
-  logradouro String?
-  cidade     String?
-  estado     String?
-  telefone   String?
-
-  caixaPedidos Pedido[] @relation("CaixaPedidos")
-  pedidos      Pedido[] @relation("ClientePedidos")
-
-  pagamentos            Pagamento[]
-  auditoriasOperador    AuditoriaAcao[] @relation("OperadorAuditoria")
+  id                    Int             @id @default(autoincrement())
+  nome                  String
+  email                 String?         @unique
+  password              String
+  role                  Role            @default(CLIENTE)
+  cpf                   String?         @unique
+  cep                   String?
+  logradouro            String?
+  cidade                String?
+  estado                String?
+  telefone              String?
+  empresaId             Int
   auditoriasAutorizador AuditoriaAcao[] @relation("AutorizadorAuditoria")
+  auditoriasOperador    AuditoriaAcao[] @relation("OperadorAuditoria")
+  empresa               Empresa         @relation(fields: [empresaId], references: [id])
+  pagamentos            Pagamento[]
+  caixaPedidos          Pedido[]        @relation("CaixaPedidos")
+  pedidos               Pedido[]        @relation("ClientePedidos")
 }
 
 model AuditoriaAcao {
   id            Int      @id @default(autoincrement())
-  acao          String
-  valor         Float?
-  detalhes      String?
   operadorId    Int
+  acao          String
   autorizadoPor Int?
-  referenciaId  Int?
-  dadosExtras   Json?
   createdAt     DateTime @default(now())
-
-  operador    Cliente  @relation("OperadorAuditoria", fields: [operadorId], references: [id])
-  autorizador Cliente? @relation("AutorizadorAuditoria", fields: [autorizadoPor], references: [id])
+  detalhes      String?
+  valor         Float?
+  dadosExtras   Json?
+  referenciaId  Int?
+  autorizador   Cliente? @relation("AutorizadorAuditoria", fields: [autorizadoPor], references: [id])
+  operador      Cliente  @relation("OperadorAuditoria", fields: [operadorId], references: [id])
 }
 
 model FamiliaProduto {
-  id   Int    @id @default(autoincrement())
-  nome String @unique
-
+  id         Int                @id @default(autoincrement())
+  nome       String             @unique
   categorias CategoriaProduto[]
 }
 
 model CategoriaProduto {
-  id   Int    @id @default(autoincrement())
-  nome String
-
-  empresaId Int
-  empresa   Empresa @relation(fields: [empresaId], references: [id])
-
+  id        Int                @id @default(autoincrement())
+  nome      String
   familiaId Int
-  familia   FamiliaProduto @relation(fields: [familiaId], references: [id])
-
-  produtos Produto[]
-  badges   BadgePromocional[]
+  empresaId Int
+  badges    BadgePromocional[]
+  empresa   Empresa            @relation(fields: [empresaId], references: [id])
+  familia   FamiliaProduto     @relation(fields: [familiaId], references: [id])
+  produtos  Produto[]
 
   @@unique([nome, familiaId, empresaId])
 }
 
 model Produto {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String
-  price       Float
-  image       String
-  estoque     Int
-  createdAt   DateTime @default(now())
-
-  empresaId Int
-  empresa   Empresa @relation(fields: [empresaId], references: [id])
-
-  categoriaId Int?
-  categoria   CategoriaProduto? @relation(fields: [categoriaId], references: [id])
-
-  codigoBarras String? @unique
-
-  itens     ItemPedido[]
-  promocoes Promocao[]         @relation("ProdutosPromocao")
-  badges    BadgePromocional[]
-  variacoes ProdutoVariacao[]
+  id           Int                @id @default(autoincrement())
+  title        String
+  description  String
+  price        Float
+  image        String
+  estoque      Int
+  createdAt    DateTime           @default(now())
+  categoriaId  Int?
+  codigoBarras String?            @unique
+  empresaId    Int
+  badges       BadgePromocional[]
+  itens        ItemPedido[]
+  categoria    CategoriaProduto?  @relation(fields: [categoriaId], references: [id])
+  empresa      Empresa            @relation(fields: [empresaId], references: [id])
+  variacoes    ProdutoVariacao[]
+  promocoes    Promocao[]         @relation("ProdutosPromocao")
 }
 
 model ProdutoVariacao {
-  id        Int @id @default(autoincrement())
+  id        Int             @id @default(autoincrement())
   produtoId Int
-
   cor       String?
   tamanho   String?
   modelagem String?
   gola      String?
-  estoque   Int     @default(0)
-  sku       String? @unique
-
-  produto Produto         @relation(fields: [produtoId], references: [id])
-  imagens ProdutoImagem[]
+  estoque   Int             @default(0)
+  sku       String?         @unique
+  imagens   ProdutoImagem[]
+  produto   Produto         @relation(fields: [produtoId], references: [id])
 }
 
 model ProdutoImagem {
-  id         Int     @id @default(autoincrement())
+  id         Int             @id @default(autoincrement())
   variacaoId Int
   url        String
   tipo       String?
-  ordem      Int     @default(0)
-
-  variacao ProdutoVariacao @relation(fields: [variacaoId], references: [id])
+  ordem      Int             @default(0)
+  variacao   ProdutoVariacao @relation(fields: [variacaoId], references: [id])
 }
 
 model BadgePromocional {
-  id          Int     @id @default(autoincrement())
-  ativo       Boolean @default(true)
+  id          Int               @id @default(autoincrement())
+  ativo       Boolean           @default(true)
   texto       String
   icone       String?
   valorMinimo Float?
-
   categoriaId Int?
   produtoId   Int?
-
-  produto   Produto?          @relation(fields: [produtoId], references: [id])
-  categoria CategoriaProduto? @relation(fields: [categoriaId], references: [id])
-
-  createdAt DateTime @default(now())
+  createdAt   DateTime          @default(now())
+  categoria   CategoriaProduto? @relation(fields: [categoriaId], references: [id])
+  produto     Produto?          @relation(fields: [produtoId], references: [id])
 }
 
 model Pedido {
-  id           Int    @id @default(autoincrement())
-  numeroPedido String @unique
-  empresaId Int
-  empresa   Empresa @relation(fields: [empresaId], references: [id])
-
-  clienteId Int?
-  caixaId   Int?
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  valorTotal      Float    @default(0)
-  status          String   @default("PENDENTE")
-  entregue        Boolean  @default(false)
-  metodoPagamento String   @default("DESCONHECIDO")
-
-  cliente Cliente? @relation("ClientePedidos", fields: [clienteId], references: [id])
-  caixa   Cliente? @relation("CaixaPedidos", fields: [caixaId], references: [id])
-
-  itens           ItemPedido[]
-  historicoStatus PedidoStatus[]
-  pagamentos      Pagamento[]
-  fretes          Frete[]
+  id              Int                 @id @default(autoincrement())
+  numeroPedido    String              @unique
+  clienteId       Int?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  valorTotal      Float               @default(0)
+  status          String              @default("PENDENTE")
+  entregue        Boolean             @default(false)
+  caixaId         Int?
+  metodoPagamento String              @default("DESCONHECIDO")
+  empresaId       Int
   comprovantes    ComprovanteEntrega?
+  fretes          Frete[]
+  itens           ItemPedido[]
+  pagamentos      Pagamento[]
+  caixa           Cliente?            @relation("CaixaPedidos", fields: [caixaId], references: [id])
+  cliente         Cliente?            @relation("ClientePedidos", fields: [clienteId], references: [id])
+  empresa         Empresa             @relation(fields: [empresaId], references: [id])
+  historicoStatus PedidoStatus[]
 }
 
 model ItemPedido {
   id            Int     @id @default(autoincrement())
-
-  empresaId     Int
-  empresa       Empresa  @relation(fields: [empresaId], references: [id])
-
   pedidoId      Int
   produtoId     Int
   quantidade    Int
   valor         Float?
   descricao     String?
   valorUnitario Float?
-
-  pedido  Pedido  @relation(fields: [pedidoId], references: [id])
-  produto Produto @relation(fields: [produtoId], references: [id])
+  empresaId     Int
+  empresa       Empresa @relation(fields: [empresaId], references: [id])
+  pedido        Pedido  @relation(fields: [pedidoId], references: [id])
+  produto       Produto @relation(fields: [produtoId], references: [id])
 }
 
 model PedidoStatus {
@@ -209,93 +173,73 @@ model PedidoStatus {
   pedidoId   Int
   status     String
   dataStatus DateTime
-
-  pedido Pedido @relation(fields: [pedidoId], references: [id])
+  pedido     Pedido   @relation(fields: [pedidoId], references: [id])
 }
 
 model ComprovanteEntrega {
   id             Int      @id @default(autoincrement())
   pedidoId       Int      @unique
-  numeroPedido   String?
+  nomeRecebedor  String?
   fotoUrl        String
   cloudinaryId   String?
-  nomeRecebedor  String?
-  entregadorNome String   @default("Não informado")
   createdAt      DateTime @default(now())
-
-  pedido Pedido @relation(fields: [pedidoId], references: [id])
+  entregadorNome String   @default("Não informado")
+  numeroPedido   String?
+  pedido         Pedido   @relation(fields: [pedidoId], references: [id])
 }
 
 model Frete {
-  id               Int  @id @default(autoincrement())
+  id               Int             @id @default(autoincrement())
   pedidoId         Int
   transportadoraId Int?
-
-  pesoMin      Float @default(0)
-  pesoMax      Float @default(999999)
-  valor        Float @default(0)
-  prazoEntrega Int   @default(3)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  pedido         Pedido          @relation(fields: [pedidoId], references: [id])
-  transportadora Transportadora? @relation(fields: [transportadoraId], references: [id])
+  pesoMin          Float           @default(0)
+  pesoMax          Float           @default(999999)
+  valor            Float           @default(0)
+  prazoEntrega     Int             @default(3)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  pedido           Pedido          @relation(fields: [pedidoId], references: [id])
+  transportadora   Transportadora? @relation(fields: [transportadoraId], references: [id])
 }
 
 model Transportadora {
-  id Int @id @default(autoincrement())
-
-  empresaId Int
-  empresa   Empresa @relation(fields: [empresaId], references: [id])
-  
-  numero   String? @unique
-  nome     String
-  cnpj     String
-  telefone String
-
-  fretePadrao Float? @default(0)
-
-  cep        String?
-  logradouro String?
-  bairro     String?
-  cidade     String?
-  estado     String?
-
+  id          Int     @id @default(autoincrement())
+  nome        String
+  cnpj        String
+  telefone    String
+  fretePadrao Float?  @default(0)
+  cep         String?
+  logradouro  String?
+  bairro      String?
+  cidade      String?
+  estado      String?
   tipoVeiculo String?
-
-  fretes Frete[]
+  empresaId   Int
+  numero      String? @unique
+  fretes      Frete[]
+  empresa     Empresa @relation(fields: [empresaId], references: [id])
 }
 
 model Pagamento {
-  id        Int @id @default(autoincrement())
-
-  empresaId Int
-  empresa   Empresa @relation(fields: [empresaId], references: [id])
-
-  pedidoId  Int
-  clienteId Int?
-
-  forma  String
-  valor  Float
-  status String @default("PENDENTE")
-
-  parcelas  Int?
-  descricao String?
-
-  codigoExterno String? @unique
-
-  criadoEm DateTime @default(now())
-
+  id              Int                @id @default(autoincrement())
+  pedidoId        Int
+  clienteId       Int?
+  forma           String
+  valor           Float
+  status          String             @default("PENDENTE")
+  parcelas        Int?
+  criadoEm        DateTime           @default(now())
+  codigoExterno   String?            @unique
+  descricao       String?
+  empresaId       Int
   pixCodigo       String?
   pixQrCodeBase64 String?
-  pixTxid         String?
   pixStatus       String?
-
-  pedido  Pedido   @relation(fields: [pedidoId], references: [id])
-  cliente Cliente? @relation(fields: [clienteId], references: [id])
-
-  parcelasList ParcelaPagamento[]
+  pixTxid         String?
+  cliente         Cliente?           @relation(fields: [clienteId], references: [id])
+  empresa         Empresa            @relation(fields: [empresaId], references: [id])
+  pedido          Pedido             @relation(fields: [pedidoId], references: [id])
+  parcelasList    ParcelaPagamento[]
 }
 
 model ParcelaPagamento {
@@ -306,24 +250,30 @@ model ParcelaPagamento {
   vencimento    DateTime
   pago          Boolean   @default(false)
   pagoEm        DateTime?
-
-  pagamento Pagamento @relation(fields: [pagamentoId], references: [id])
+  pagamento     Pagamento @relation(fields: [pagamentoId], references: [id])
 }
 
 model Promocao {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   nome        String
   desconto    Float
-  freteGratis Boolean
-  dataInicio  DateTime
+  createdAt   DateTime  @default(now())
   dataFim     DateTime
-  createdAt   DateTime @default(now())
-
-  produtos Produto[] @relation("ProdutosPromocao")
+  dataInicio  DateTime
+  freteGratis Boolean
+  produtos    Produto[] @relation("ProdutosPromocao")
 }
 
 model Sequencia {
   id            Int      @id @default(1)
   proximoNumero Int      @default(1)
   updatedAt     DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPERUSER
+  CAIXA
+  CLIENTE
 }

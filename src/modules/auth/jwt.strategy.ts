@@ -1,34 +1,40 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
+import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
-  constructor() {
+  constructor(private prisma: PrismaService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || "default-secret", // <- nunca mais undefined
+      secretOrKey: process.env.JWT_SECRET || "default-secret",
     });
   }
 
   async validate(payload: any) {
     console.log("🟢 PAYLOAD JWT RECEBIDO:", payload);
+
     if (!payload || !payload.sub) {
       throw new UnauthorizedException("Payload do token inválido");
     }
 
-    // Retorna todos os dados que estavam antes
+    // 🔐 aplica empresa automaticamente nas queries Prisma
+    if (payload.empresaId) {
+      this.prisma.setEmpresaId(payload.empresaId);
+    }
+
     return {
       id: payload.sub,
       email: payload.email,
       nome: payload.nome,
       role: payload.role,
+      empresaId: payload.empresaId,
       cep: payload.cep,
       cidade: payload.cidade,
       estado: payload.estado,
       telefone: payload.telefone,
     };
   }
-
 }
