@@ -10,7 +10,6 @@ import {
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { PrismaService } from "../../prisma/prisma.service";
-//import { PrismaService } from "../"; 
 import * as bcrypt from "bcrypt";
 import { LoginDto } from "./login.dto";
 

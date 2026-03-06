@@ -78,25 +78,7 @@ export class ClientesService {
       },
     });
   }
-  // async cadastroRapido(data: {
-  //   nome: string;
-  //   email: string;
-  //   cpf: string;
-  //   telefone: string;
-  // }) {
-  //   return this.prisma.cliente.create({
-  //     data: {
-  //       ...data,
-  //       password: await bcrypt.hash("123456@1234", 10), // 🔥 HASH AGORA
-  //       role: Role.CLIENTE,
-  //       cep: null,
-  //       logradouro: null,
-  //       cidade: null,
-  //       estado: null,
-  //     },
-  //   });
-  // }
-
+  
   async atualizarCadastroRapido(cpf: string, data: any) {
     const updateData = { ...data };
 
