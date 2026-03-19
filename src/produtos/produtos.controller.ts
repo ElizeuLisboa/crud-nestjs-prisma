@@ -12,7 +12,7 @@ import {
   NotFoundException,
   Request,
 } from "@nestjs/common";
-import { Express } from 'express';
+import { Express } from "express";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
 import { extname } from "path";
@@ -30,43 +30,22 @@ export class ProdutosController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @Roles("ADMIN", "SUPERUSER")
-  @UseInterceptors(
-    FileInterceptor("imagem", {
-      storage: diskStorage({
-        destination: "./uploads/produtos",
-        filename: (_, file, callback) => {
-          const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
-          callback(
-            null,
-            `${file.fieldname}-${unique}${extname(file.originalname)}`,
-          );
-        },
-      }),
-      fileFilter: (_, file, cb) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
-          return cb(
-            new BadRequestException("Tipo de arquivo não suportado"),
-            false,
-          );
-        }
-        cb(null, true);
-      },
-    }),
-  )
-  @Post()
-  async create(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() dto: CreateProdutoDTO,
-  ) {
-    if (!dto.categoriaNome || dto.categoriaNome.trim() === "") {
-      throw new BadRequestException("categoriaNome é obrigatório");
-    }
+  @UseInterceptors(FileInterceptor("imagem"))
+  async create(@UploadedFile() file: Express.Multer.File, @Body() dto: any) {
+    let fotoUrl = dto.image;
+    let cloudinaryId = null;
 
-    const imagePath = file ? `/uploads/produtos/${file.filename}` : dto.image;
+    if (file) {
+      const result = await this.produtosService.uploadImagem(file);
+
+      fotoUrl = result.fotoUrl;
+      cloudinaryId = result.cloudinaryId;
+    }
 
     return this.produtosService.create({
       ...dto,
-      image: imagePath,
+      fotoUrl,
+      cloudinaryId,
       price: Number(dto.price),
       estoque: Number(dto.estoque),
     });

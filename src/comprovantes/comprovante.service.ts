@@ -45,25 +45,6 @@ export class ComprovanteService {
       },
     });
 
-    // const comprovante = await this.prisma.comprovanteEntrega.upsert({
-    //   where: { pedidoId: dados.pedidoId },
-    //   update: {
-    //     nomeRecebedor: dados.nomeRecebedor ?? "Não Informado",
-    //     entregadorNome: dados.entregadorNome ?? "Não Informado",
-    //     fotoUrl: dados.fotoUrl,
-    //     cloudinaryId: dados.cloudinaryId,
-    //     createdAt: new Date(),
-    //   },
-    //   create: {
-    //     pedidoId: dados.pedidoId,
-    //     numeroPedido: pedido.numeroPedido,
-    //     nomeRecebedor: dados.nomeRecebedor ?? "Não Informado",
-    //     entregadorNome: dados.entregadorNome ?? "Não Informado",
-    //     fotoUrl: dados.fotoUrl,
-    //     cloudinaryId: dados.cloudinaryId,
-    //   },
-    // });
-
     console.log("✅ Comprovante criado:", comprovante);
 
     // ✅ Atualiza o pedido para status ENTREGUE

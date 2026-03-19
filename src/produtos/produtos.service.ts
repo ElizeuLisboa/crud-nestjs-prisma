@@ -5,6 +5,8 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { Prisma } from "@prisma/client";
+import cloudinary from "../cloudinary/cloudinary.config";
+import { Readable } from "stream";
 
 export type CreateProdutoDTO = {
   title: string;
@@ -29,6 +31,8 @@ export class ProdutosService {
         price: data.price,
         estoque: data.estoque,
         image: data.image,
+        fotoUrl: data.image,
+        cloudinaryId: null,
         codigoBarras: data.codigoBarras,
 
         categoria: {
@@ -44,26 +48,57 @@ export class ProdutosService {
     });
   }
 
-  // async create(data: CreateProdutoDTO) {
-  //   return this.prisma.produto.create({
-  //     data: {
-  //       title: data.title,
-  //       description: data.description,
-  //       price: data.price,
-  //       estoque: data.estoque,
-  //       image: data.image,
-  //       codigoBarras: data.codigoBarras,
-  //       // ✅ CONEXÃO PELO NOME (campo @unique)
-  //       categoria: {
-  //         connect: {
-  //           id: data.categoriaId,
-  //         },
-  //         empresa: {
-  //           connect: { id: 1 }, // temporário para compilar
-  //         },
+  async uploadImagem(
+    file: Express.Multer.File,
+  ): Promise<{ fotoUrl: string; cloudinaryId: string }> {
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "produtos" },
+        (error, result) => {
+          if (error || !result) {
+            return reject(new Error("Erro ao enviar imagem"));
+          }
+
+          resolve({
+            fotoUrl: result.secure_url,
+            cloudinaryId: result.public_id,
+          });
+        },
+      );
+
+      Readable.from(file.buffer).pipe(stream);
+    });
+  }
+
+  // async uploadImagem(file: Express.Multer.File) {
+  //   return new Promise((resolve, reject) => {
+  //     const stream = cloudinary.uploader.upload_stream(
+  //       {
+  //         folder: "produtos",
   //       },
-  //     },
+  //       (error, result) => {
+  //         if (error) return reject(error);
+
+  //         resolve({
+  //           fotoUrl: result.secure_url,
+  //           cloudinaryId: result.public_id,
+  //         });
+  //       },
+  //     );
+
+  //     Readable.from(file.buffer).pipe(stream);
   //   });
+  // }
+
+  // async uploadImagem(file: Express.Multer.File) {
+  //   const result = await cloudinary.uploader.upload(file.path, {
+  //     folder: "produtos",
+  //   });
+
+  //   return {
+  //     fotoUrl: result.secure_url,
+  //     cloudinaryId: result.public_id,
+  //   };
   // }
 
   async findByBarcode(codigo: string) {

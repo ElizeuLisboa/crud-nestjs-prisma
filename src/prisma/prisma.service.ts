@@ -19,8 +19,24 @@ export class PrismaService
   }
 
   async onModuleInit() {
-    await this.$connect();
+    let retries = 5;
+
+    while (retries) {
+      try {
+        await this.$connect();
+        console.log("✅ Conectado ao banco");
+        break;
+      } catch (error) {
+        console.log("⏳ Tentando conectar ao banco...");
+        retries--;
+        await new Promise((res) => setTimeout(res, 3000));
+      }
+    }
   }
+
+  // async onModuleInit() {
+  //   await this.$connect();
+  // }
 
   async onModuleDestroy() {
     await this.$disconnect();

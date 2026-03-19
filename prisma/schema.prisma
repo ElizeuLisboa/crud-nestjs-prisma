@@ -89,6 +89,8 @@ model Produto {
   categoriaId  Int?
   codigoBarras String?            @unique
   empresaId    Int
+  cloudinaryId String?
+  fotoUrl      String?
   badges       BadgePromocional[]
   itens        ItemPedido[]
   categoria    CategoriaProduto?  @relation(fields: [categoriaId], references: [id])
