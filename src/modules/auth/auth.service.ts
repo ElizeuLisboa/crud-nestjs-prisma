@@ -26,10 +26,10 @@ export class AuthService {
         email: true,
         password: true,
         role: true,
+        empresaId: true, // 👈 IMPORTANTE
         cep: true,
         cidade: true,
         estado: true,
-        empresaId: true, // 👈 IMPORTANTE
       },
     });
 
@@ -61,7 +61,7 @@ export class AuthService {
       estado: cliente.estado,
     };
 
-    const jwt = await this.jwtService.signAsync(payload, { expiresIn: "7d" });
+    const jwt = await this.jwtService.signAsync(payload, { expiresIn: "4d" });
 
     return {
       cliente: {
