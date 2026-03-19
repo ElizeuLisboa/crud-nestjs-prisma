@@ -6,11 +6,14 @@ import { CaixaService } from "./caixa.service";
 export class CaixaController {
   constructor(private readonly caixaService: CaixaService) {}
 
-  @Post("finalizar")
-  @UseGuards(JwtAuthGuard)
-  async finalizar(@Body() body: any, @Request() req: any ) {
-    return this.caixaService.finalizarVenda(body, req.user);
-  }
+@Post("finalizar")
+@UseGuards(JwtAuthGuard)
+async finalizar(
+  @Body() body: any,
+  @Request() req: any,
+) {
+  return this.caixaService.finalizarVenda(body, req.user);
+}
 
   // @Post("finalizar")
   // @UseGuards(JwtAuthGuard)

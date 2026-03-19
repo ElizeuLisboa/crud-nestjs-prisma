@@ -13,10 +13,12 @@ export class CaixaService {
 
   // async finalizarVenda(body: any, usuario: any) {
   async finalizarVenda(data: any, usuario: any) {
+    console.log("USUARIO JWT:", usuario);
     const empresaId = usuario?.empresaId;
     if (!empresaId) {
       throw new BadRequestException("empresaId não encontrado no usuário");
     }
+    
     const {
       operadorId,
       clienteId,
