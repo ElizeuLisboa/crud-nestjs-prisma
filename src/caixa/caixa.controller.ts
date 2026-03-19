@@ -8,12 +8,18 @@ export class CaixaController {
 
   @Post("finalizar")
   @UseGuards(JwtAuthGuard)
-  async finalizarVenda(@Body() body: any, @Request() req: any) {
-    const operadorId = req.user.sub;
-    return this.caixaService.finalizarVenda({
-      ...body,
-      operadorId,
-    });
-    // return this.caixaService.finalizarVenda(body, req.user);
+  async finalizar(@Body() body: any, @Request() req: any ) {
+    return this.caixaService.finalizarVenda(body, req.user);
   }
+
+  // @Post("finalizar")
+  // @UseGuards(JwtAuthGuard)
+  // async finalizarVenda(@Body() body: any, @Request() req: any) {
+  //   const operadorId = req.user.sub;
+  //   return this.caixaService.finalizarVenda({
+  //     ...body,
+  //     operadorId,
+  //   });
+  //   // return this.caixaService.finalizarVenda(body, req.user);
+  // }
 }

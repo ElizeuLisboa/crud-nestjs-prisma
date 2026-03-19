@@ -12,7 +12,11 @@ export class CaixaService {
   ) {}
 
   // async finalizarVenda(body: any, usuario: any) {
-  async finalizarVenda(data: any) {
+  async finalizarVenda(data: any, usuario: any) {
+    const empresaId = usuario?.empresaId;
+    if (!empresaId) {
+      throw new BadRequestException("empresaId não encontrado no usuário");
+    }
     const {
       operadorId,
       clienteId,
@@ -78,14 +82,15 @@ export class CaixaService {
       const numeroPedido = `PDV-${String(seq.proximoNumero).padStart(6, "0")}`;
       // const numeroPedido = `PDV-${Date.now()}`;
 
+      if (!User.empresaId) {
+        throw new BadRequestException("empresaId é obrigatório");
+      }
+
       const pedido = await tx.pedido.create({
         data: {
           numeroPedido,
-          empresaId: User.empresaId, // necessário agora
-
+          empresaId, // necessário agora
           cliente: clienteId,
-          //cliente: { connect: { id: clienteId } },
-
           valorTotal,
           status: "AGUARDANDO_PAGAMENTO",
 
@@ -96,8 +101,9 @@ export class CaixaService {
               const produto = produtos.find((p) => p.id === id)!;
 
               return {
-                empresaId: User.empresaId,
-                clienteId,
+                // empresaId: User.empresaId,
+                empresaId,
+                clienteId: clienteValido,
                 produtoId: id,
                 quantidade: i.quantidade,
                 valor: produto.price,
@@ -139,7 +145,7 @@ export class CaixaService {
           valor: valorTotal ?? totalCalculado,
           status: metodoPagamento === "PIX" ? "PENDENTE" : "PAGO",
           parcelas: metodoPagamento === "CREDITO" ? parcelas : 1,
-          empresaId: 1, // empresa padrão por enquanto
+          empresaId, // empresa padrão por enquanto
         },
       });
 
@@ -170,8 +176,7 @@ export class CaixaService {
 
       // 🔥 7️⃣ GERAR PIX
       let dadosPix: any = null;
-      //console.log("CHAMOU FINALIZAR VENDA");
-      // console.log("metodoPagamento:", metodoPagamento);
+
       if (metodoPagamento === "PIX") {
         const pixGerado = this.pixService.gerarPix({
           pedidoId: pedido.id,
@@ -183,7 +188,7 @@ export class CaixaService {
         const qrBase64 = await this.pixService.gerarQrCodeBase64(
           pixGerado.codigo,
         );
-        // console.log("PIX GERADO:", pixGerado);
+
         await tx.pagamento.update({
           where: { id: pagamento.id },
           data: {
