@@ -12,6 +12,7 @@ async finalizar(
   @Body() body: any,
   @Request() req: any,
 ) {
+  console.log(req.user)
   return this.caixaService.finalizarVenda(body, req.user);
 }
 

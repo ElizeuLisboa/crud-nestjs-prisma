@@ -1,8 +1,6 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { PixService } from "../pagamentos/pix/pix.service";
-import console from "console";
-import { User } from "mercadopago";
 
 @Injectable()
 export class CaixaService {
@@ -11,16 +9,16 @@ export class CaixaService {
     private pixService: PixService,
   ) {}
 
-  // async finalizarVenda(body: any, usuario: any) {
   async finalizarVenda(data: any, usuario: any) {
     console.log("USUARIO JWT:", usuario);
+
     const empresaId = usuario?.empresaId;
+
     if (!empresaId) {
       throw new BadRequestException("empresaId não encontrado no usuário");
     }
-    
+
     const {
-      operadorId,
       clienteId,
       itens,
       metodoPagamento,
@@ -42,7 +40,7 @@ export class CaixaService {
       where: { id: { in: ids } },
     });
 
-    // 🔥 1️⃣ VALIDAÇÃO DE EXISTÊNCIA + ESTOQUE
+    // 🔥 Validação de estoque
     for (const i of itens) {
       const id = i.produtoId ?? i.id;
       const produto = produtos.find((p) => p.id === id);
@@ -58,7 +56,6 @@ export class CaixaService {
       }
     }
 
-    // 🔥 2️⃣ CALCULAR TOTAL REAL PELO BANCO
     const totalCalculado = itens.reduce((acc: number, i: any) => {
       const id = i.produtoId ?? i.id;
       const produto = produtos.find((p) => p.id === id)!;
@@ -68,44 +65,37 @@ export class CaixaService {
     return this.prisma.$transaction(async (tx) => {
       const seq = await tx.sequencia.update({
         where: { id: 1 },
-        data: {
-          proximoNumero: { increment: 1 },
-        },
+        data: { proximoNumero: { increment: 1 } },
       });
+
       let clienteValido: number | null = null;
-      console.log("clienteId recebido:", clienteId);
+
       if (clienteId) {
         const existe = await tx.cliente.findUnique({
           where: { id: clienteId },
         });
+
         clienteValido = existe ? clienteId : null;
       }
 
       const numeroPedido = `PDV-${String(seq.proximoNumero).padStart(6, "0")}`;
-      // const numeroPedido = `PDV-${Date.now()}`;
-
-      if (!User.empresaId) {
-        throw new BadRequestException("empresaId é obrigatório");
-      }
 
       const pedido = await tx.pedido.create({
         data: {
           numeroPedido,
-          empresaId, // necessário agora
-          cliente: clienteId,
-          valorTotal,
+          empresaId,
+          clienteId: clienteValido ?? undefined,
+          valorTotal: valorTotal ?? totalCalculado,
           status: "AGUARDANDO_PAGAMENTO",
 
           itens: {
             create: itens.map((i: any) => {
               const id = i.produtoId ?? i.id;
-
               const produto = produtos.find((p) => p.id === id)!;
 
               return {
-                // empresaId: User.empresaId,
                 empresaId,
-                clienteId: clienteValido,
+                clienteId: clienteValido ?? undefined,
                 produtoId: id,
                 quantidade: i.quantidade,
                 valor: produto.price,
@@ -121,7 +111,7 @@ export class CaixaService {
         },
       });
 
-      // 🔥 4️⃣ BAIXA DE ESTOQUE (DENTRO DA TRANSACTION)
+      // 🔥 Baixa estoque
       for (const i of itens) {
         const id = i.produtoId ?? i.id;
 
@@ -135,48 +125,23 @@ export class CaixaService {
         });
       }
 
-      // 🔥 5️⃣ CRIAR PAGAMENTO
       if (!metodoPagamento) {
         throw new BadRequestException("Metodo de pagamento não informado");
       }
+
       const pagamento = await tx.pagamento.create({
         data: {
           pedidoId: pedido.id,
-          clienteId: clienteValido,
+          clienteId: clienteValido ?? undefined,
           forma: metodoPagamento,
           valor: valorTotal ?? totalCalculado,
           status: metodoPagamento === "PIX" ? "PENDENTE" : "PAGO",
           parcelas: metodoPagamento === "CREDITO" ? parcelas : 1,
-          empresaId, // empresa padrão por enquanto
+          empresaId,
         },
       });
 
-      // 🔥 6️⃣ GERAR PARCELAS SE CRÉDITO
-      if (metodoPagamento === "CREDITO") {
-        const total = Number(valorTotal ?? totalCalculado);
-        const valorBase = Math.floor((total / parcelas) * 100) / 100;
-
-        const parcelasData = Array.from({ length: parcelas }).map(
-          (_, index) => {
-            const isUltima = index === parcelas - 1;
-
-            return {
-              pagamentoId: pagamento.id,
-              numeroParcela: index + 1,
-              valor: isUltima
-                ? Number((total - valorBase * (parcelas - 1)).toFixed(2))
-                : valorBase,
-              vencimento: this.addMeses(new Date(), index),
-            };
-          },
-        );
-
-        await tx.parcelaPagamento.createMany({
-          data: parcelasData,
-        });
-      }
-
-      // 🔥 7️⃣ GERAR PIX
+      // 🔥 PIX
       let dadosPix: any = null;
 
       if (metodoPagamento === "PIX") {
@@ -206,6 +171,7 @@ export class CaixaService {
           pixQrCodeBase64: qrBase64,
           pixTxid: pixGerado.txid,
         };
+
         await tx.pagamento.update({
           where: { id: pagamento.id },
           data: { status: "PAGO", pixStatus: "CONFIRMADO" },
@@ -221,9 +187,7 @@ export class CaixaService {
         where: { id: pedido.id },
         include: {
           itens: {
-            include: {
-              produto: true,
-            },
+            include: { produto: true },
           },
         },
       });
