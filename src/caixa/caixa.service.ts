@@ -84,7 +84,7 @@ export class CaixaService {
         data: {
           numeroPedido,
           empresaId,
-          clienteId: clienteValido ?? undefined,
+          clienteId: clienteValido ?? null,
           valorTotal: valorTotal ?? totalCalculado,
           status: "AGUARDANDO_PAGAMENTO",
 
@@ -95,7 +95,7 @@ export class CaixaService {
 
               return {
                 empresaId,
-                clienteId: clienteValido ?? undefined,
+                clienteId: clienteValido ?? null,
                 produtoId: id,
                 quantidade: i.quantidade,
                 valor: produto.price,
@@ -132,7 +132,7 @@ export class CaixaService {
       const pagamento = await tx.pagamento.create({
         data: {
           pedidoId: pedido.id,
-          clienteId: clienteValido ?? undefined,
+          clienteId: clienteValido ?? null,
           forma: metodoPagamento,
           valor: valorTotal ?? totalCalculado,
           status: metodoPagamento === "PIX" ? "PENDENTE" : "PAGO",
@@ -140,6 +140,7 @@ export class CaixaService {
           empresaId,
         },
       });
+      console.log("METODO RECEBIDO:", metodoPagamento);
 
       // 🔥 PIX
       let dadosPix: any = null;
@@ -177,10 +178,18 @@ export class CaixaService {
           data: { status: "PAGO", pixStatus: "CONFIRMADO" },
         });
 
-        await tx.pedido.update({
-          where: { id: pedido.id },
-          data: { status: "FINALIZADO" },
-        });
+        // 🔥 Se não for PIX, já finaliza pedido
+        if (metodoPagamento !== "PIX") {
+          await tx.pedido.update({
+            where: { id: pedido.id },
+            data: { status: "FINALIZADO" },
+          });
+        }
+
+        // await tx.pedido.update({
+        //   where: { id: pedido.id },
+        //   data: { status: "FINALIZADO" },
+        // });
       }
 
       const pedidoCompleto = await tx.pedido.findUnique({
