@@ -70,37 +70,7 @@ export class ProdutosService {
     });
   }
 
-  // async uploadImagem(file: Express.Multer.File) {
-  //   return new Promise((resolve, reject) => {
-  //     const stream = cloudinary.uploader.upload_stream(
-  //       {
-  //         folder: "produtos",
-  //       },
-  //       (error, result) => {
-  //         if (error) return reject(error);
-
-  //         resolve({
-  //           fotoUrl: result.secure_url,
-  //           cloudinaryId: result.public_id,
-  //         });
-  //       },
-  //     );
-
-  //     Readable.from(file.buffer).pipe(stream);
-  //   });
-  // }
-
-  // async uploadImagem(file: Express.Multer.File) {
-  //   const result = await cloudinary.uploader.upload(file.path, {
-  //     folder: "produtos",
-  //   });
-
-  //   return {
-  //     fotoUrl: result.secure_url,
-  //     cloudinaryId: result.public_id,
-  //   };
-  // }
-
+  
   async findByBarcode(codigo: string) {
     if (!codigo || codigo.trim() === "") return null;
 

@@ -14,6 +14,9 @@ export class CaixaService {
 
     const empresaId = usuario?.empresaId;
 
+    console.log("📦 DATA RECEBIDA:", data);
+    console.log("👤 USUARIO:", usuario);
+
     if (!empresaId) {
       throw new BadRequestException("empresaId não encontrado no usuário");
     }
@@ -79,12 +82,23 @@ export class CaixaService {
       }
 
       const numeroPedido = `PDV-${String(seq.proximoNumero).padStart(6, "0")}`;
+      console.log("📦 DATA RECEBIDA:", data);
+      console.log("👤 USUARIO:", usuario);
+      console.log("🏢 empresaId:", empresaId);
 
+      console.log("1️⃣ Criando pedido...");
       const pedido = await tx.pedido.create({
         data: {
           numeroPedido,
-          empresaId,
-          clienteId: clienteValido ?? null,
+
+          empresa: {
+            connect: { id: empresaId },
+          },
+
+          cliente: clienteValido
+            ? { connect: { id: clienteValido } }
+            : undefined,
+            
           valorTotal: valorTotal ?? totalCalculado,
           status: "AGUARDANDO_PAGAMENTO",
 
@@ -95,7 +109,7 @@ export class CaixaService {
 
               return {
                 empresaId,
-                clienteId: clienteValido ?? null,
+                clienteId: clienteValido ?? undefined,
                 produtoId: id,
                 quantidade: i.quantidade,
                 valor: produto.price,
@@ -111,6 +125,7 @@ export class CaixaService {
         },
       });
 
+      console.log("2️⃣ Atualizando estoque...");
       // 🔥 Baixa estoque
       for (const i of itens) {
         const id = i.produtoId ?? i.id;
@@ -129,22 +144,28 @@ export class CaixaService {
         throw new BadRequestException("Metodo de pagamento não informado");
       }
 
+      console.log("3️⃣ Criando pagamento...");
       const pagamento = await tx.pagamento.create({
         data: {
           pedidoId: pedido.id,
-          clienteId: clienteValido ?? null,
+
+          clienteId: clienteValido ?? undefined, // ✅ CORRETO AQUI
+
           forma: metodoPagamento,
           valor: valorTotal ?? totalCalculado,
           status: metodoPagamento === "PIX" ? "PENDENTE" : "PAGO",
           parcelas: metodoPagamento === "CREDITO" ? parcelas : 1,
-          empresaId,
+
+          empresaId, // ✅ TAMBÉM CORRETO AQUI
         },
       });
+
       console.log("METODO RECEBIDO:", metodoPagamento);
 
       // 🔥 PIX
       let dadosPix: any = null;
 
+      // 🔥 PIX
       if (metodoPagamento === "PIX") {
         const pixGerado = this.pixService.gerarPix({
           pedidoId: pedido.id,
@@ -178,19 +199,61 @@ export class CaixaService {
           data: { status: "PAGO", pixStatus: "CONFIRMADO" },
         });
 
-        // 🔥 Se não for PIX, já finaliza pedido
-        if (metodoPagamento !== "PIX") {
-          await tx.pedido.update({
-            where: { id: pedido.id },
-            data: { status: "FINALIZADO" },
-          });
-        }
-
-        // await tx.pedido.update({
-        //   where: { id: pedido.id },
-        //   data: { status: "FINALIZADO" },
-        // });
+        await tx.pedido.update({
+          where: { id: pedido.id },
+          data: { status: "FINALIZADO" },
+        });
       }
+
+      // 🔥 OUTROS PAGAMENTOS (DINHEIRO / CARTÃO)
+      if (metodoPagamento !== "PIX") {
+        await tx.pedido.update({
+          where: { id: pedido.id },
+          data: { status: "FINALIZADO" },
+        });
+      }
+
+      // if (metodoPagamento === "PIX") {
+      //   const pixGerado = this.pixService.gerarPix({
+      //     pedidoId: pedido.id,
+      //     valor: Number(valorTotal ?? totalCalculado),
+      //     descricao: `Pedido ${pedido.id}`,
+      //     nome: clienteValido ? "CLIENTE IDENTIFICADO" : "CLIENTE PDV",
+      //   });
+
+      //   const qrBase64 = await this.pixService.gerarQrCodeBase64(
+      //     pixGerado.codigo,
+      //   );
+
+      //   await tx.pagamento.update({
+      //     where: { id: pagamento.id },
+      //     data: {
+      //       pixCodigo: pixGerado.codigo,
+      //       pixTxid: pixGerado.txid,
+      //       pixQrCodeBase64: qrBase64,
+      //       pixStatus: "GERADO",
+      //     },
+      //   });
+
+      //   dadosPix = {
+      //     pixCodigo: pixGerado.codigo,
+      //     pixQrCodeBase64: qrBase64,
+      //     pixTxid: pixGerado.txid,
+      //   };
+
+      //   await tx.pagamento.update({
+      //     where: { id: pagamento.id },
+      //     data: { status: "PAGO", pixStatus: "CONFIRMADO" },
+      //   });
+
+      //   // 🔥 Se não for PIX, já finaliza pedido
+      //   if (metodoPagamento !== "PIX") {
+      //     await tx.pedido.update({
+      //       where: { id: pedido.id },
+      //       data: { status: "FINALIZADO" },
+      //     });
+      //   }
+      // }
 
       const pedidoCompleto = await tx.pedido.findUnique({
         where: { id: pedido.id },

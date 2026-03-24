@@ -16,7 +16,7 @@ import { Express } from "express";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
 import { extname } from "path";
-
+import { CloudinaryService } from "../cloudinary/cloudinary.service";
 import { CreateProdutoDTO, ProdutosService } from "./produtos.service";
 import { JwtAuthGuard } from "../modules/auth/jwt-auth.guard";
 import { Roles } from "../modules/auth/roles.decorator";
@@ -36,6 +36,7 @@ export class ProdutosController {
     let cloudinaryId = null;
 
     if (file) {
+      // const result = await this.produtosService.uploadImagem(file);
       const result = await this.produtosService.uploadImagem(file);
 
       fotoUrl = result.fotoUrl;
@@ -93,4 +94,7 @@ export class ProdutosController {
     }
     return this.produtosService.findOne(parsedId);
   }
+
 }
+
+
