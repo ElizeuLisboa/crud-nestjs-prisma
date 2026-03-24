@@ -82,11 +82,11 @@ export class CaixaService {
       }
 
       const numeroPedido = `PDV-${String(seq.proximoNumero).padStart(6, "0")}`;
-      console.log("📦 DATA RECEBIDA:", data);
-      console.log("👤 USUARIO:", usuario);
-      console.log("🏢 empresaId:", empresaId);
+      // console.log("📦 DATA RECEBIDA:", data);
+      // console.log("👤 USUARIO:", usuario);
+      // console.log("🏢 empresaId:", empresaId);
 
-      console.log("1️⃣ Criando pedido...");
+      // console.log("1️⃣ Criando pedido...");
       const pedido = await tx.pedido.create({
         data: {
           numeroPedido,
@@ -98,9 +98,10 @@ export class CaixaService {
           cliente: clienteValido
             ? { connect: { id: clienteValido } }
             : undefined,
-            
+
           valorTotal: valorTotal ?? totalCalculado,
           status: "AGUARDANDO_PAGAMENTO",
+          metodoPagamento: metodoPagamento, 
 
           itens: {
             create: itens.map((i: any) => {
@@ -125,7 +126,7 @@ export class CaixaService {
         },
       });
 
-      console.log("2️⃣ Atualizando estoque...");
+      // console.log("2️⃣ Atualizando estoque...");
       // 🔥 Baixa estoque
       for (const i of itens) {
         const id = i.produtoId ?? i.id;
@@ -144,7 +145,7 @@ export class CaixaService {
         throw new BadRequestException("Metodo de pagamento não informado");
       }
 
-      console.log("3️⃣ Criando pagamento...");
+      // console.log("3️⃣ Criando pagamento...");
       const pagamento = await tx.pagamento.create({
         data: {
           pedidoId: pedido.id,
