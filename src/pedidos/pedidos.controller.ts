@@ -24,19 +24,13 @@ import { Express } from "express";
 export class PedidosController {
   constructor(private readonly pedidosService: PedidosService) {}
 
-@Post("site")
-@UseGuards(JwtAuthGuard)
-criarPedidoSite(@Req() req: any, @Body() body: any) {
-  console.log("🔥 PASSOU NO CONTROLLER");
-  return this.pedidosService.criarPedido(req.user, body);
-}
-// criarPedidoSite(@Req() req: any, @Body() body: CreatePedidoDto) {
-//   console.log("🔥 HEADERS NO BACK:", req.headers);
-//   console.log("🔥 USER:", req.user);
+  @Post("site")
+  @UseGuards(JwtAuthGuard)
+  criarPedidoSite(@Req() req: any, @Body() body: any) {
+    console.log("🔥 PASSOU NO CONTROLLER");
+    return this.pedidosService.criarPedido(req.user, body);
+  }
 
-//   return this.pedidosService.criarPedido(req.user, body);
-// }
-  // 🧾 Criar pedido normal (cliente logado)
   @Post()
   @UseGuards(JwtAuthGuard)
   criarPedido(@Req() req: any, @Body() body: CreatePedidoDto) {

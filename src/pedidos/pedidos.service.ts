@@ -127,10 +127,13 @@ export class PedidosService {
       const empresa = await tx.empresa.findFirst();
 
       return {
-        pedidoId: pedido.id,
-        numeroPedido: pedido.numeroPedido,
+        pedido: {
+          id: pedido.id,
+          numeroPedido: pedido.numeroPedido,
+        },
         empresa,
       };
+
     });
   }
 
