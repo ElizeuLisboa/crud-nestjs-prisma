@@ -1,0 +1,139 @@
+3?? Strategy JWT não está populando user o payload está completando direitinho, ao menos
+antes estava funcionando com o que está no código
+4?? Header chegando errado - no console do navegador o token está ok, sem aspas, sem espaços
+pedidos.controller
+import { PedidosService } from "./pedidos.service";
+import { CreatePedidoDto } from "./dto/create-pedido.dto";
+import { JwtAuthGuard } from "../modules/auth/jwt-auth.guard";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { Express } from "express";
+
+@Controller("pedidos")
+export class PedidosController {
+  constructor(private readonly pedidosService: PedidosService) {}
+
+  
+  @Post("site")
+  @UseGuards(JwtAuthGuard)
+  criarPedidoSite(@Req() req: any, @Body() body: CreatePedidoDto) {
+    console.log("REQ USER:", req.user);
+    return this.pedidosService.criarPedido(req.user, body);
+  }
+
+  // ?? Criar pedido normal (cliente logado)
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  criarPedido(@Req() req: any, @Body() body: CreatePedidoDto) {
+    return this.pedidosService.create(body, req.user);
+  }
+pedidos.service aqui tem dois create, acho que você consegue identificar a causa a partir 
+do controller a parte do POST 
+async create(data: CreatePedidoDto, user: any) {
+    if (!user?.id) {
+      throw new UnauthorizedException("Usuário não identificado");
+    }
+
+    const empresaId = user.empresaId;
+
+    const produtoIds = data.itens.map((item) => item.produtoId);
+
+    const produtos = await this.prisma.produto.findMany({
+      where: { id: { in: produtoIds } },
+    });
+
+    if (produtos.length !== produtoIds.length) {
+      throw new BadRequestException("Um ou mais produtos não existem");
+    }
+
+    const produtosMap = new Map(produtos.map((p) => [p.id, p]));
+
+    const valorTotal = data.itens.reduce((total, item) => {
+      const produto = produtosMap.get(item.produtoId);
+      return total + (produto?.price ?? 0) * item.quantidade;
+    }, 0);
+
+    return this.prisma.$transaction(async (tx) => {
+      const numeroPedido = await this.gerarNumeroPedido(tx);
+
+      return tx.pedido.create({
+        data: {
+          numeroPedido,
+          empresaId,
+          clienteId: user.id,
+          valorTotal,
+          status: "AGUARDANDO_PAGAMENTO",
+
+          itens: {
+            create: data.itens.map((item) => {
+              const produto = produtosMap.get(item.produtoId);
+
+              return {
+                empresaId,
+                produtoId: item.produtoId,
+                quantidade: item.quantidade,
+                valor: (produto?.price ?? 0) * item.quantidade,
+              };
+            }),
+          },
+        },
+
+        include: {
+          cliente: true,
+          itens: { include: { produto: true } },
+        },
+      });
+    });
+  }
+
+  // ====================================================
+  // CRIAR PEDIDO PELO CLIENTE LOGADO
+  // ====================================================
+
+  async criarPedido(user: any, body: CriarPedidoDto) {
+    console.log("?? USER RECEBIDO:", user);
+
+    if (!user || !user.id) {
+      console.log("? USER INVÁLIDO:", user);
+      throw new UnauthorizedException("Usuário não identificado");
+    }
+    // if (!user?.id) {
+    //   throw new UnauthorizedException("Usuário não identificado");
+    // }
+
+    const empresaId = user.empresaId;
+
+    return this.prisma.$transaction(async (tx) => {
+      const numeroPedido = await this.gerarNumeroPedido(tx);
+
+      console.log("?? BODY:", body);
+      console.log("?? USER ID:", user.id);
+
+      const pedido = await tx.pedido.create({
+        data: {
+          numeroPedido,
+          empresaId,
+          clienteId: user.id,
+          status: "PENDENTE",
+
+          itens: {
+            create: body.itens.map((item) => ({
+              empresaId,
+              produtoId: item.produtoId,
+              quantidade: item.quantidade,
+              valor: item.preco,
+              // valor: item.valor ?? item.preco,
+            })),
+          },
+        },
+      });
+
+      const empresa = await tx.empresa.findFirst();
+
+      return {
+        pedidoId: pedido.id,
+        numeroPedido: pedido.numeroPedido,
+        empresa,
+      };
+    });
+  }
+  

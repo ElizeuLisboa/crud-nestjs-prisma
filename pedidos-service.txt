@@ -1,3 +1,6 @@
+ajustar valor, da erro em valor, deixei como estava, não creio
+que isso tenha quebrado para o 401, mas como última tentativa hoje, 
+se não vemos isso amanhã, estou enviando o pedidos.service.ts
 import {
   Injectable,
   NotFoundException,
@@ -96,6 +99,9 @@ export class PedidosService {
       console.log("❌ USER INVÁLIDO:", user);
       throw new UnauthorizedException("Usuário não identificado");
     }
+    // if (!user?.id) {
+    //   throw new UnauthorizedException("Usuário não identificado");
+    // }
 
     const empresaId = user.empresaId;
 
@@ -327,3 +333,4 @@ export class PedidosService {
     };
   }
 }
+

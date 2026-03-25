@@ -20,15 +20,10 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: ["http://localhost:3000", 
+    origin: ["http://localhost:3000",
              "https://pdv-frontend-1xyf.onrender.com"],
     credentials: true,
   });
-
-  // app.enableCors({
-  //   origin: "https://pdv-frontend-1xyf.onrender.com",
-  //   credentials: true,
-  // });
 
   app.use(cookieParser());
 
