@@ -83,7 +83,7 @@ export class PedidosService {
             clienteId: user.id,
             valorTotal,
             status: "PENDENTE",
-            origem: "SITE",
+            // origem: "SITE",
 
             itens: {
               create: data.itens.map((item) => {
