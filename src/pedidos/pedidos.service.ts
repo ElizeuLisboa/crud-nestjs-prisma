@@ -34,13 +34,12 @@ export class PedidosService {
     return `PEDS-${numero}`;
   }
 
-  
   async create(data: CreatePedidoDto, user: any) {
     console.log("USER NO CREATE:", user);
     if (!user?.id) {
       throw new UnauthorizedException("Usuário não identificado");
     }
-    
+
     const empresaId = user.empresaId;
 
     const produtoIds = data.itens.map((item) => item.produtoId);
@@ -73,47 +72,52 @@ export class PedidosService {
         .toFixed(2),
     );
 
-    return this.prisma.$transaction(async (tx) => {
-      const numeroPedido = await this.gerarNumeroPedidoSite(tx);
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const numeroPedido = await this.gerarNumeroPedidoSite(tx);
 
-      return tx.pedido.create({
-        data: {
-          numeroPedido,
-          empresaId,
-          clienteId: user.id,
-          valorTotal,
-          status: "PENDENTE",
-          origem: "SITE",
+        return tx.pedido.create({
+          data: {
+            numeroPedido,
+            empresaId,
+            clienteId: user.id,
+            valorTotal,
+            status: "PENDENTE",
+            origem: "SITE",
 
-          itens: {
-            create: data.itens.map((item) => {
-              const produto = produtosMap.get(item.produtoId);
+            itens: {
+              create: data.itens.map((item) => {
+                const produto = produtosMap.get(item.produtoId);
 
-              if (!produto) {
-                throw new BadRequestException(
-                  `Produto ${item.produtoId} não encontrado`,
-                );
-              }
+                if (!produto) {
+                  throw new BadRequestException(
+                    `Produto ${item.produtoId} não encontrado`,
+                  );
+                }
 
-              const valorUnitario = Number(item.preco ?? produto.price);
+                const valorUnitario = Number(item.preco ?? produto.price);
 
-              return {
-                empresaId,
-                produtoId: item.produtoId,
-                quantidade: item.quantidade,
-                valor: valorUnitario,
-                nomeProduto: produto.title, // opcional mas top
-              };
-            }),
+                return {
+                  empresaId,
+                  produtoId: item.produtoId,
+                  quantidade: item.quantidade,
+                  valor: valorUnitario,
+                  nomeProduto: produto.title, // opcional mas top
+                };
+              }),
+            },
           },
-        },
 
-        include: {
-          cliente: true,
-          itens: { include: { produto: true } },
-        },
+          include: {
+            cliente: true,
+            itens: { include: { produto: true } },
+          },
+        });
       });
-    });
+    } catch (error) {
+      console.log("💥 ERRO REAL:", error);
+      throw error;
+    }
   }
 
   // ====================================================
