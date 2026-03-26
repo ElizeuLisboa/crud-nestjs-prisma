@@ -30,8 +30,18 @@ export class PedidosController {
     console.log("🔥 PASSOU NO CONTROLLER");
     console.log("🔥 HEADERS:", req.headers.authorization);
     console.log("🔥 USER:", req.user);
-    return this.pedidosService.create(req.user, body);
+
+    return this.pedidosService.create(body, req.user); // ✅ CORRETO
   }
+
+  // @Post("site")
+  // @UseGuards(JwtAuthGuard)
+  // criarPedidoSite(@Req() req: any, @Body() body: CreatePedidoDto) {
+  //   console.log("🔥 PASSOU NO CONTROLLER");
+  //   console.log("🔥 HEADERS:", req.headers.authorization);
+  //   console.log("🔥 USER:", req.user);
+  //   return this.pedidosService.create(req.user, body);
+  // }
 
   @Post()
   @UseGuards(JwtAuthGuard)
