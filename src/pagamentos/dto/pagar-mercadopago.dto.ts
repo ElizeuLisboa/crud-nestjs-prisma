@@ -12,6 +12,9 @@ export class PagarMercadoPagoDto {
   @Type(() => Number)
   installments: number;
 
+  @Type(() => String )
+  paymentMethodId: string;
+
   payer: {
     identification: {
       type: "CPF";

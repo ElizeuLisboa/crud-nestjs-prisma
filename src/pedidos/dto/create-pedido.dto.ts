@@ -9,6 +9,8 @@ export class ItemPedidoDto {
   @Min(1)
   quantidade!: number;
 
+  preco?: number;
+
 }
 
 export class CreatePedidoDto {

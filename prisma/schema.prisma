@@ -142,6 +142,7 @@ model Pedido {
   updatedAt       DateTime            @updatedAt
   valorTotal      Float               @default(0)
   status          String              @default("PENDENTE")
+  origem          String              @default("PDV") // 👈 AQUI
   entregue        Boolean             @default(false)
   caixaId         Int?
   metodoPagamento String              @default("DESCONHECIDO")

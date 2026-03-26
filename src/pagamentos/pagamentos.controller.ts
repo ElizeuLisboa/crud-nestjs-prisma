@@ -14,7 +14,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { Express } from 'express';
+import { Express } from "express";
 import { ConfigService } from "@nestjs/config";
 import { PagamentosService } from "./pagamentos.service";
 import { Request, Response } from "express";
@@ -23,12 +23,11 @@ import { PagarMercadoPagoDto } from "./dto/pagar-mercadopago.dto";
 import { MercadoPagoService } from "./mercadopago/mercadopago.service";
 import { PrismaService } from "../prisma/prisma.service";
 
-
 @Controller("pagamentos")
 export class PagamentosController {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly pagamentosService: PagamentosService
+    private readonly pagamentosService: PagamentosService,
   ) {}
 
   @Post("webhook/mercadopago")
@@ -61,6 +60,7 @@ export class PagamentosController {
       valor: Number(dto.valor),
       token: dto.token,
       installments: Number(dto.installments),
+      paymentMethodId: dto.paymentMethodId, // 👈 AQUI
       payer: dto.payer,
     };
 
@@ -68,6 +68,4 @@ export class PagamentosController {
 
     return this.pagamentosService.pagarComCartao(payload);
   }
-
-  
 }

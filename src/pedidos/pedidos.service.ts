@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreatePedidoDto } from "./dto/create-pedido.dto";
-import { CriarPedidoDto } from "./dto/criar-pedido.dto";
+// import { CriarPedidoDto } from "./dto/criar-pedido.dto";
 import { Express } from "express";
 
 @Injectable()
@@ -24,10 +24,17 @@ export class PedidosService {
     return `PDV-${numero}`;
   }
 
-  // ====================================================
-  // CRIAR PEDIDO (SITE)
-  // ====================================================
+  private async gerarNumeroPedidoSite(tx: any) {
+    const seq = await tx.sequencia.update({
+      where: { id: 1 },
+      data: { proximoNumero: { increment: 1 } },
+    });
 
+    const numero = String(seq.proximoNumero).padStart(6, "0");
+    return `PEDS-${numero}`;
+  }
+
+  
   async create(data: CreatePedidoDto, user: any) {
     if (!user?.id) {
       throw new UnauthorizedException("Usuário não identificado");
@@ -47,13 +54,26 @@ export class PedidosService {
 
     const produtosMap = new Map(produtos.map((p) => [p.id, p]));
 
-    const valorTotal = data.itens.reduce((total, item) => {
-      const produto = produtosMap.get(item.produtoId);
-      return total + (produto?.price ?? 0) * item.quantidade;
-    }, 0);
+    const valorTotal = Number(
+      data.itens
+        .reduce((total, item) => {
+          const produto = produtosMap.get(item.produtoId);
+
+          if (!produto) {
+            throw new BadRequestException(
+              `Produto ${item.produtoId} não encontrado`,
+            );
+          }
+
+          const valor = Number(item.preco ?? produto.price);
+
+          return total + valor * item.quantidade;
+        }, 0)
+        .toFixed(2),
+    );
 
     return this.prisma.$transaction(async (tx) => {
-      const numeroPedido = await this.gerarNumeroPedido(tx);
+      const numeroPedido = await this.gerarNumeroPedidoSite(tx);
 
       return tx.pedido.create({
         data: {
@@ -61,17 +81,27 @@ export class PedidosService {
           empresaId,
           clienteId: user.id,
           valorTotal,
-          status: "AGUARDANDO_PAGAMENTO",
+          status: "PENDENTE",
+          origem: "SITE",
 
           itens: {
             create: data.itens.map((item) => {
               const produto = produtosMap.get(item.produtoId);
 
+              if (!produto) {
+                throw new BadRequestException(
+                  `Produto ${item.produtoId} não encontrado`,
+                );
+              }
+
+              const valorUnitario = Number(item.preco ?? produto.price);
+
               return {
                 empresaId,
                 produtoId: item.produtoId,
                 quantidade: item.quantidade,
-                valor: (produto?.price ?? 0) * item.quantidade,
+                valor: valorUnitario,
+                nomeProduto: produto.title, // opcional mas top
               };
             }),
           },
@@ -82,58 +112,6 @@ export class PedidosService {
           itens: { include: { produto: true } },
         },
       });
-    });
-  }
-
-  // ====================================================
-  // CRIAR PEDIDO PELO CLIENTE LOGADO
-  // ====================================================
-
-  async criarPedido(user: any, body: CriarPedidoDto) {
-    console.log("🔥 USER RECEBIDO:", user);
-
-    if (!user || !user.id) {
-      console.log("❌ USER INVÁLIDO:", user);
-      throw new UnauthorizedException("Usuário não identificado");
-    }
-
-    const empresaId = user.empresaId;
-
-    return this.prisma.$transaction(async (tx) => {
-      const numeroPedido = await this.gerarNumeroPedido(tx);
-
-      console.log("📦 BODY:", body);
-      console.log("👤 USER ID:", user.id);
-
-      const pedido = await tx.pedido.create({
-        data: {
-          numeroPedido,
-          empresaId,
-          clienteId: user.id,
-          status: "PENDENTE",
-
-          itens: {
-            create: body.itens.map((item) => ({
-              empresaId,
-              produtoId: item.produtoId,
-              quantidade: item.quantidade,
-              valor: item.preco,
-              // valor: item.valor ?? item.preco,
-            })),
-          },
-        },
-      });
-
-      const empresa = await tx.empresa.findFirst();
-
-      return {
-        pedido: {
-          id: pedido.id,
-          numeroPedido: pedido.numeroPedido,
-        },
-        empresa,
-      };
-
     });
   }
 

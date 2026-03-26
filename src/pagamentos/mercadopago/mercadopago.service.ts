@@ -21,15 +21,6 @@ export class MercadoPagoService {
     this.preference = new Preference(this.client);
   }
 
-  // constructor() {
-  //   const client = new MercadoPagoConfig({
-  //     accessToken: process.env.MP_ACCESS_TOKEN!,
-  //   });
-
-  //   this.payment = new Payment(client);
-  //   this.preference = new Preference(client);
-  // }
-
   async buscarPagamentoPorId(paymentId: string) {
     try {
       return await this.payment.get({ id: paymentId });
@@ -64,23 +55,23 @@ export class MercadoPagoService {
     return this.preference.create({ body: preference });
   }
 
-  async pagarComCartao(payload: PagarMercadoPagoDto) {
+  async pagarComCartao(payment: PagarMercadoPagoDto) {
     const body = {
-      transaction_amount: Number(payload.valor),
-      token: payload.token,
-      installments: Number(payload.installments),
+      transaction_amount: Number(payment.valor),
+      token: payment.token,
+      installments: Number(payment.installments),
 
-      payment_method_id: "master",
+      payment_method_id: payment.paymentMethodId, // "master",
 
-      external_reference: String(payload.pedidoId),
+      external_reference: String(payment.pedidoId),
 
-      description: `Pedido #${payload.pedidoId}`,
+      description: `Pedido #${payment.pedidoId}`,
 
       payer: {
         email: "cliente@email.com",
         identification: {
           type: "CPF",
-          number: payload.payer.identification.number,
+          number: payment.payer.identification.number,
         },
       },
     };
