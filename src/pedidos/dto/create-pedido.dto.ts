@@ -1,4 +1,4 @@
-import { IsArray, ArrayMinSize, ValidateNested, IsInt, Min } from 'class-validator';
+import { IsArray, ArrayMinSize, IsNumber, IsOptional, ValidateNested, IsInt, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ItemPedidoDto {
@@ -9,7 +9,9 @@ export class ItemPedidoDto {
   @Min(1)
   quantidade!: number;
 
-  preco?: number;
+  @IsOptional()
+  @IsNumber()
+  preco?: number; // 👈 ESSENCIAL
 
 }
 
