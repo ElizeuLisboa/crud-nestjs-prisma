@@ -36,10 +36,11 @@ export class PedidosService {
 
   
   async create(data: CreatePedidoDto, user: any) {
+    console.log("USER NO CREATE:", user);
     if (!user?.id) {
       throw new UnauthorizedException("Usuário não identificado");
     }
-
+    
     const empresaId = user.empresaId;
 
     const produtoIds = data.itens.map((item) => item.produtoId);

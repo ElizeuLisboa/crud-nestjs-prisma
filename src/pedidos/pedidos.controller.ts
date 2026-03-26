@@ -28,9 +28,11 @@ export class PedidosController {
   @UseGuards(JwtAuthGuard)
   criarPedidoSite(@Req() req: any, @Body() body: CreatePedidoDto) {
     console.log("🔥 PASSOU NO CONTROLLER");
+    console.log("🔥 HEADERS:", req.headers.authorization);
+    console.log("🔥 USER:", req.user);
     return this.pedidosService.create(req.user, body);
   }
-                       
+
   @Post()
   @UseGuards(JwtAuthGuard)
   criarPedido(@Req() req: any, @Body() body: CreatePedidoDto) {
