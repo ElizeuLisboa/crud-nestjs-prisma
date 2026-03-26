@@ -110,7 +110,7 @@ export class PedidosService {
                   produtoId: item.produtoId,
                   quantidade: item.quantidade,
                   valor: valorUnitario,
-                  nomeProduto: produto.title,
+                  // omeProduto: produto.title,
                 };
               }),
             },
