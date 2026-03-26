@@ -35,48 +35,56 @@ export class PedidosService {
   }
 
   async create(data: CreatePedidoDto, user: any) {
-    console.log("USER NO CREATE:", user);
-    if (!user?.id) {
-      throw new UnauthorizedException("Usuário não identificado");
-    }
-
-    const empresaId = user.empresaId;
-
-    const produtoIds = data.itens.map((item) => item.produtoId);
-
-    const produtos = await this.prisma.produto.findMany({
-      where: { id: { in: produtoIds } },
-    });
-
-    if (produtos.length !== produtoIds.length) {
-      throw new BadRequestException("Um ou mais produtos não existem");
-    }
-
-    const produtosMap = new Map(produtos.map((p) => [p.id, p]));
-
-    const valorTotal = Number(
-      data.itens
-        .reduce((total, item) => {
-          const produto = produtosMap.get(item.produtoId);
-
-          if (!produto) {
-            throw new BadRequestException(
-              `Produto ${item.produtoId} não encontrado`,
-            );
-          }
-
-          const valor = Number(item.preco ?? produto.price);
-
-          return total + valor * item.quantidade;
-        }, 0)
-        .toFixed(2),
-    );
-
     try {
-      return this.prisma.$transaction(async (tx) => {
-        const numeroPedido = await this.gerarNumeroPedidoSite(tx);
+      console.log("🧠 USER NO CREATE:", user);
+      console.log("🧠 DATA RECEBIDA:", data);
 
-        return tx.pedido.create({
+      if (!user?.id) {
+        throw new UnauthorizedException("Usuário não identificado");
+      }
+
+      const empresaId = user.empresaId;
+
+      const produtoIds = data.itens.map((item) => item.produtoId);
+      console.log("🧠 PRODUTO IDS:", produtoIds);
+
+      const produtos = await this.prisma.produto.findMany({
+        where: { id: { in: produtoIds } },
+      });
+
+      console.log("🧠 PRODUTOS ENCONTRADOS:", produtos);
+
+      if (produtos.length !== produtoIds.length) {
+        throw new BadRequestException("Um ou mais produtos não existem");
+      }
+
+      const produtosMap = new Map(produtos.map((p) => [p.id, p]));
+
+      const valorTotal = Number(
+        data.itens
+          .reduce((total, item) => {
+            const produto = produtosMap.get(item.produtoId);
+
+            if (!produto) {
+              throw new BadRequestException(
+                `Produto ${item.produtoId} não encontrado`,
+              );
+            }
+
+            const valor = Number(item.preco ?? produto.price);
+
+            return total + valor * item.quantidade;
+          }, 0)
+          .toFixed(2),
+      );
+
+      console.log("🧠 VALOR TOTAL:", valorTotal);
+
+      return await this.prisma.$transaction(async (tx) => {
+        const numeroPedido = await this.gerarNumeroPedidoSite(tx);
+        console.log("🧠 NUMERO PEDIDO:", numeroPedido);
+
+        const pedido = await tx.pedido.create({
           data: {
             numeroPedido,
             empresaId,
@@ -102,7 +110,7 @@ export class PedidosService {
                   produtoId: item.produtoId,
                   quantidade: item.quantidade,
                   valor: valorUnitario,
-                  nomeProduto: produto.title, // opcional mas top
+                  nomeProduto: produto.title,
                 };
               }),
             },
@@ -113,9 +121,13 @@ export class PedidosService {
             itens: { include: { produto: true } },
           },
         });
+
+        console.log("✅ PEDIDO CRIADO:", pedido);
+
+        return pedido;
       });
     } catch (error) {
-      console.log("💥 ERRO REAL:", error);
+      console.log("💥 ERRO REAL NO CREATE:", error);
       throw error;
     }
   }
