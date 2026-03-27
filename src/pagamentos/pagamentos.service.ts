@@ -251,22 +251,6 @@ export class PagamentosService {
     return { ok: true };
   }
 
-  // async processarWebhookMP(evento: any) {
-  //   const txid = evento?.data?.id || evento?.txid;
-
-  //   const pagamento = await this.prisma.pagamento.findFirst({
-  //     where: { pixTxid: txid },
-  //   });
-
-  //   if (!pagamento) return { ok: true };
-
-  //   if (evento.action === "payment.updated") {
-  //     await this.confirmarPagamento(pagamento.id);
-  //   }
-
-  //   return { ok: true };
-  // }
-
   async confirmarPagamento(pagamentoId: number) {
     return this.prisma.$transaction(async (tx) => {
       const pagamento = await tx.pagamento.findUnique({
