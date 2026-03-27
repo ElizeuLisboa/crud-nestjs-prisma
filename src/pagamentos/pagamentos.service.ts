@@ -43,6 +43,12 @@ export class PagamentosService {
   }
 
   async criarPix(pedidoId: number) {
+    console.log("🧠 PEDIDO ID PIX:", pedidoId);
+
+    if (!pedidoId || isNaN(pedidoId)) {
+      throw new Error("pedidoId inválido");
+    }
+
     const pedido = await this.prisma.pedido.findUnique({
       where: { id: pedidoId },
     });
@@ -50,6 +56,8 @@ export class PagamentosService {
     if (!pedido) {
       throw new Error("Pedido não encontrado");
     }
+
+    console.log("🧠 PEDIDO ENCONTRADO:", pedido);
 
     const pagamento = await this.mercadoPagoService.criarPagamentoPix({
       valor: pedido.valorTotal,

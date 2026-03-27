@@ -70,7 +70,7 @@ export class PagamentosController {
   }
 
   @Post("pix")
-  criarPix(@Body("pedidoId") pedidoId: number) {
-    return this.pagamentosService.criarPix(pedidoId);
+  criarPix(@Body("pedidoId") pedidoId: string) {
+    return this.pagamentosService.criarPix(Number(pedidoId));
   }
 }
