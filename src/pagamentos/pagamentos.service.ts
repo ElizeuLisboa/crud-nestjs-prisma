@@ -42,6 +42,23 @@ export class PagamentosService {
     return this.mercadoPagoService.pagarComCartao(dto);
   }
 
+  async criarPix(pedidoId: number) {
+    const pedido = await this.prisma.pedido.findUnique({
+      where: { id: pedidoId },
+    });
+
+    if (!pedido) {
+      throw new Error("Pedido não encontrado");
+    }
+
+    const pagamento = await this.mercadoPagoService.criarPagamentoPix({
+      valor: pedido.valorTotal,
+      pedidoId: pedido.id,
+    });
+
+    return pagamento;
+  }
+
   async processarWebhookMercadoPago(body: any) {
     if (body.type !== "payment") return;
 

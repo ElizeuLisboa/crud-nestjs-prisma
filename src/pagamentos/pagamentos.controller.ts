@@ -68,4 +68,9 @@ export class PagamentosController {
 
     return this.pagamentosService.pagarComCartao(payload);
   }
+
+  @Post("pix")
+  criarPix(@Body("pedidoId") pedidoId: number) {
+    return this.pagamentosService.criarPix(pedidoId);
+  }
 }

@@ -95,4 +95,19 @@ export class MercadoPagoService {
       });
     }
   }
+
+  async criarPagamentoPix({ valor, pedidoId }: any) {
+    return this.payment.create({
+      body: {
+        transaction_amount: Number(valor),
+        description: "Pagamento via PIX",
+        payment_method_id: "pix",
+        payer: {
+          email: "teste@teste.com",
+        },
+        external_reference: String(pedidoId),
+        notification_url: process.env.MP_WEBHOOK_URL,
+      },
+    });
+  }
 }
