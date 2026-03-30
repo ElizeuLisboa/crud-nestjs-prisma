@@ -21,11 +21,6 @@ export class ComprovanteService {
       throw new NotFoundException("Pedido não encontrado");
     }
 
-    // ✅ Cria ou atualiza o comprovante de entrega
-    // const pedido = await this.prisma.pedido.findUnique({
-    //   where: { id: dados.pedidoId },
-    // });
-
     const comprovante = await this.prisma.comprovanteEntrega.upsert({
       where: { pedidoId: dados.pedidoId },
       update: {

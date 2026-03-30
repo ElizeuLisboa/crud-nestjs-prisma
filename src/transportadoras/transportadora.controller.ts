@@ -10,10 +10,6 @@ export class TransportadoraController {
     return this.service.create(body);
   }
 
-  // @Post()
-  // create(@Body() body: { nome: string; cnpj?: string; telefone?: string; frete?: number}) {
-  //   return this.service.create(body);
-  // }
 
   @Get()
   findAll() {
