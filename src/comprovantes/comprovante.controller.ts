@@ -36,6 +36,10 @@ export class ComprovanteController {
       entregadorNome,
     });
 
+    console.log("Cloudinary:", {
+      cloud: process.env.CLOUDINARY_CLOUD_NAME,
+      key: process.env.CLOUDINARY_API_KEY,
+    });
     // const fotoUrl = file?.path || "";
     // const cloudinaryId = "comprovantes/" + file?.filename;
 
