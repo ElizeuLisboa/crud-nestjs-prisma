@@ -1,20 +1,60 @@
+# =========================
 # Node
-node_modules
-dist
+# =========================
+node_modules/
+dist/
+build/
 
+# =========================
+# ENV (CRÍTICO)
+# =========================
 .env
-seed-*
-seed.*
-simular-pedidos.*
+.env.*
+!.env.example
+
+# =========================
 # Logs
-logs
+# =========================
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-mypass.log*
 
+# =========================
+# Temporary / Dumps
+# =========================
+*.txt
+*.csv
+*.sql
+*.bak
+*.tmp
+
+# =========================
+# Seeds / Scripts locais
+# =========================
+seed-*
+seed.*
+simular-pedidos.*
+
+# =========================
+# Prisma
+# =========================
+prisma/*.db
+prisma/*.db-journal
+
+# ⚠️ NÃO IGNORAR:
+# prisma/schema.prisma
+# prisma/migrations/
+
+# =========================
 # VSCode
+# =========================
 .vscode/
 
-.txt
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
