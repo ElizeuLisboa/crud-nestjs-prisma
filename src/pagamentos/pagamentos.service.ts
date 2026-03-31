@@ -181,75 +181,117 @@ export class PagamentosService {
     };
   }
 
-  async processarWebhookMP(evento: any) {
-    console.log("📩 WEBHOOK RECEBIDO:", evento);
+  async processarWebhookMP(body: any) {
+    console.log("📩 WEBHOOK RECEBIDO:", body);
 
-    // 🔥 só processa eventos de pagamento
-    if (evento.type !== "payment") {
-      return { ok: true };
-    }
-
-    const paymentId = evento?.data?.id;
+    const paymentId = body?.data?.id;
 
     if (!paymentId) {
       console.log("⚠️ Sem paymentId");
       return { ok: true };
     }
 
-    // 🔍 busca pagamento no MP
-    const pagamento =
+    // 🔥 BUSCA PAGAMENTO REAL NO MP
+    const pagamentoMP =
       await this.mercadoPagoService.buscarPagamentoPorId(paymentId);
 
-    if (!pagamento) {
-      console.log("❌ Não encontrou pagamento no MP");
-      return { ok: true };
-    }
+    console.log("💰 PAGAMENTO MP:", pagamentoMP?.status);
 
-    console.log("💳 PAGAMENTO MP:", pagamento);
+    if (!pagamentoMP) return { ok: true };
 
-    const pedidoId = pagamento.external_reference;
+    // 🔥 PEGA ID DO PEDIDO
+    const pedidoId = Number(pagamentoMP.external_reference);
 
     if (!pedidoId) {
       console.log("⚠️ Sem external_reference");
       return { ok: true };
     }
 
-    const statusMP = pagamento.status;
+    // 🔥 SE PAGOU
+    if (pagamentoMP.status === "approved") {
+      console.log("✅ PAGAMENTO APROVADO");
 
-    let statusPedido = "PENDENTE";
-
-    if (statusMP === "approved") statusPedido = "PAGO";
-    if (statusMP === "rejected") statusPedido = "RECUSADO";
-    if (statusMP === "cancelled") statusPedido = "CANCELADO";
-
-    // 🔁 evita processar duas vezes
-    const pedido = await this.prisma.pedido.findUnique({
-      where: { id: Number(pedidoId) },
-    });
-
-    if (!pedido) {
-      console.log("❌ Pedido não encontrado:", pedidoId);
-      return { ok: true };
+      await this.prisma.pedido.update({
+        where: { id: pedidoId },
+        data: {
+          status: "PAGO",
+          metodoPagamento: "PIX",
+        },
+      });
     }
-
-    if (pedido.status === "PAGO") {
-      console.log("🔁 Pedido já pago");
-      return { ok: true };
-    }
-
-    // ✅ atualiza pedido
-    await this.prisma.pedido.update({
-      where: { id: Number(pedidoId) },
-      data: {
-        status: statusPedido,
-        metodoPagamento: "MERCADOPAGO",
-      },
-    });
-
-    console.log("✅ Pedido atualizado:", pedidoId, statusPedido);
 
     return { ok: true };
   }
+
+  // async processarWebhookMP(evento: any) {
+  //   console.log("📩 WEBHOOK RECEBIDO:", evento);
+
+  //   // 🔥 só processa eventos de pagamento
+  //   if (evento.type !== "payment") {
+  //     return { ok: true };
+  //   }
+
+  //   const paymentId = evento?.data?.id;
+
+  //   if (!paymentId) {
+  //     console.log("⚠️ Sem paymentId");
+  //     return { ok: true };
+  //   }
+
+  //   // 🔍 busca pagamento no MP
+  //   const pagamento =
+  //     await this.mercadoPagoService.buscarPagamentoPorId(paymentId);
+
+  //   if (!pagamento) {
+  //     console.log("❌ Não encontrou pagamento no MP");
+  //     return { ok: true };
+  //   }
+
+  //   console.log("💳 PAGAMENTO MP:", pagamento);
+
+  //   const pedidoId = pagamento.external_reference;
+
+  //   if (!pedidoId) {
+  //     console.log("⚠️ Sem external_reference");
+  //     return { ok: true };
+  //   }
+
+  //   const statusMP = pagamento.status;
+
+  //   let statusPedido = "PENDENTE";
+
+  //   if (statusMP === "approved") statusPedido = "PAGO";
+  //   if (statusMP === "rejected") statusPedido = "RECUSADO";
+  //   if (statusMP === "cancelled") statusPedido = "CANCELADO";
+
+  //   // 🔁 evita processar duas vezes
+  //   const pedido = await this.prisma.pedido.findUnique({
+  //     where: { id: Number(pedidoId) },
+  //   });
+
+  //   if (!pedido) {
+  //     console.log("❌ Pedido não encontrado:", pedidoId);
+  //     return { ok: true };
+  //   }
+
+  //   if (pedido.status === "PAGO") {
+  //     console.log("🔁 Pedido já pago");
+  //     return { ok: true };
+  //   }
+
+  //   // ✅ atualiza pedido
+  //   await this.prisma.pedido.update({
+  //     where: { id: Number(pedidoId) },
+  //     data: {
+  //       status: statusPedido,
+  //       metodoPagamento: "MERCADOPAGO",
+  //     },
+  //   });
+
+  //   console.log("✅ Pedido atualizado:", pedidoId, statusPedido);
+
+  //   return { ok: true };
+  // }
 
   async confirmarPagamento(pagamentoId: number) {
     return this.prisma.$transaction(async (tx) => {
