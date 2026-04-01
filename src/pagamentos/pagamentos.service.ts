@@ -59,6 +59,14 @@ export class PagamentosService {
 
     console.log("🧠 PEDIDO ENCONTRADO:", pedido);
 
+    await this.prisma.pedido.update({
+      where: { id: pedidoId },
+      data: {
+        status: "PAGO",
+        metodoPagamento: "PIX",
+      },
+    });
+
     const pagamento = await this.mercadoPagoService.criarPagamentoPix({
       valor: pedido.valorTotal,
       pedidoId: pedido.id,
