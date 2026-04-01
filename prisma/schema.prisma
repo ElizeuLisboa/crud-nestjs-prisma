@@ -230,6 +230,8 @@ model Pagamento {
   forma           String
   valor           Float
   status          String             @default("PENDENTE")
+  metodo          String?
+  transactionId   String?
   parcelas        Int?
   criadoEm        DateTime           @default(now())
   codigoExterno   String?            @unique
