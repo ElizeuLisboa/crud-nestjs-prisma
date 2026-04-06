@@ -15,13 +15,21 @@ model Empresa {
   telefone        String
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
-  categorias      CategoriaProduto[]
+
   clientes        Cliente[]
+  categorias      CategoriaProduto[]
+  produtos        Produto[]
+  pedidos         Pedido[]
   itensPedido     ItemPedido[]
   pagamentos      Pagamento[]
-  pedidos         Pedido[]
-  produtos        Produto[]
   transportadoras Transportadora[]
+
+  auditorias      AuditoriaAcao[]
+  comprovantes    ComprovanteEntrega[]
+  fretes          Frete[]
+  parcelas        ParcelaPagamento[]
+  promocoes       Promocao[]
+  statusPedidos   PedidoStatus[]
 }
 
 model Cliente {
@@ -55,6 +63,10 @@ model AuditoriaAcao {
   valor         Float?
   dadosExtras   Json?
   referenciaId  Int?
+
+  empresaId     Int
+  empresa       Empresa? @relation(fields: [empresaId], references: [id])
+
   autorizador   Cliente? @relation("AutorizadorAuditoria", fields: [autorizadoPor], references: [id])
   operador      Cliente  @relation("OperadorAuditoria", fields: [operadorId], references: [id])
 }
@@ -176,6 +188,10 @@ model PedidoStatus {
   pedidoId   Int
   status     String
   dataStatus DateTime
+
+  empresaId  Int
+  empresa    Empresa? @relation(fields: [empresaId], references: [id])
+
   pedido     Pedido   @relation(fields: [pedidoId], references: [id])
 }
 
@@ -188,6 +204,10 @@ model ComprovanteEntrega {
   createdAt      DateTime @default(now())
   entregadorNome String   @default("Não informado")
   numeroPedido   String?
+
+  empresaId      Int
+  empresa        Empresa? @relation(fields: [empresaId], references: [id])
+
   pedido         Pedido   @relation(fields: [pedidoId], references: [id])
 }
 
@@ -201,6 +221,10 @@ model Frete {
   prazoEntrega     Int             @default(3)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+
+  empresaId        Int
+  empresa          Empresa? @relation(fields: [empresaId], references: [id])
+
   pedido           Pedido          @relation(fields: [pedidoId], references: [id])
   transportadora   Transportadora? @relation(fields: [transportadoraId], references: [id])
 }
@@ -255,6 +279,10 @@ model ParcelaPagamento {
   vencimento    DateTime
   pago          Boolean   @default(false)
   pagoEm        DateTime?
+
+  empresaId     Int
+  empresa       Empresa? @relation(fields: [empresaId], references: [id])
+
   pagamento     Pagamento @relation(fields: [pagamentoId], references: [id])
 }
 
@@ -266,6 +294,10 @@ model Promocao {
   dataFim     DateTime
   dataInicio  DateTime
   freteGratis Boolean
+
+  empresaId   Int
+  empresa     Empresa? @relation(fields: [empresaId], references: [id])
+
   produtos    Produto[] @relation("ProdutosPromocao")
 }
 

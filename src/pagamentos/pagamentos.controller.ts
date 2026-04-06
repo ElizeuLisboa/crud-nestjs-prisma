@@ -22,6 +22,9 @@ import { PagamentoCreditoDTO } from "./dto/pagamento.dto";
 import { PagarMercadoPagoDto } from "./dto/pagar-mercadopago.dto";
 import { MercadoPagoService } from "./mercadopago/mercadopago.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "../modules/auth/jwt-auth.guard";
+import { getEmpresaId } from "../utils/empresa.util";
 
 @Controller("pagamentos")
 export class PagamentosController {
@@ -70,7 +73,9 @@ export class PagamentosController {
   }
 
   @Post("pix")
-  criarPix(@Body("pedidoId") pedidoId: string) {
-    return this.pagamentosService.criarPix(Number(pedidoId));
+  @UseGuards(JwtAuthGuard)
+  criarPix(@Body("pedidoId") pedidoId: number, @Req() req: any) {
+    return this.pagamentosService.criarPix(Number(pedidoId), req.user);
   }
+
 }

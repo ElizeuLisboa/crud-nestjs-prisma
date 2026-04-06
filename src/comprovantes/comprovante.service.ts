@@ -17,7 +17,7 @@ export class ComprovanteService {
       where: { id: dados.pedidoId },
     });
 
-    if (!pedido) {
+    if ( !pedido || !pedido.empresaId ) {
       throw new NotFoundException("Pedido não encontrado");
     }
 
@@ -37,6 +37,7 @@ export class ComprovanteService {
         entregadorNome: dados.entregadorNome ?? "Não Informado",
         fotoUrl: dados.fotoUrl,
         cloudinaryId: dados.cloudinaryId,
+        empresaId: pedido.empresaId,
       },
     });
 

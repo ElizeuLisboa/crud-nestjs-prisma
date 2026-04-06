@@ -42,15 +42,18 @@ export class PagamentosService {
     return this.mercadoPagoService.pagarComCartao(dto);
   }
 
-  async criarPix(pedidoId: number) {
+  async criarPix(pedidoId: number, user: any) {
     console.log("🧠 PEDIDO ID PIX:", pedidoId);
 
     if (!pedidoId || isNaN(pedidoId)) {
       throw new Error("pedidoId inválido");
     }
 
-    const pedido = await this.prisma.pedido.findUnique({
-      where: { id: pedidoId },
+    const pedido = await this.prisma.pedido.findFirst({
+      where: {
+        id: pedidoId,
+        empresaId: user.empresaId,
+      },
     });
 
     if (!pedido) {
@@ -59,15 +62,15 @@ export class PagamentosService {
 
     console.log("🧠 PEDIDO ENCONTRADO:", pedido);
 
-await this.prisma.pagamento.create({
-  data: {
-    pedidoId,
-    valor: pedido.valorTotal,
-    forma: "PIX", // ou metodoPagamento
-    status: "PAGO",
-    empresaId: pedido.empresaId,
-  },
-});
+    await this.prisma.pagamento.create({
+      data: {
+        pedidoId,
+        valor: pedido.valorTotal,
+        forma: "PIX", // ou metodoPagamento
+        status: "PAGO",
+        empresaId: pedido.empresaId,
+      },
+    });
 
     await this.prisma.pedido.update({
       where: { id: pedidoId },
@@ -105,6 +108,10 @@ await this.prisma.pagamento.create({
     if (!pedidoId) return;
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const pedido = await tx.pedido.findUnique({
+        where: { id: pedidoId },
+      });
+      if (!pedido || !pedido.empresaId) return;
       const existente = await tx.pagamento.findFirst({
         where: { codigoExterno: mpId },
       });
@@ -118,7 +125,7 @@ await this.prisma.pagamento.create({
             parcelas: payment?.installments ?? 1,
             descricao: "Pagamento Mercado Pago (webhook)",
             codigoExterno: mpId,
-            empresaId: 1, // empresa padrão
+            empresaId: pedido?.empresaId, // empresa padrão
           },
         });
       } else {
@@ -181,23 +188,50 @@ await this.prisma.pagamento.create({
       throw new NotFoundException("Pagamento não encontrado");
     }
 
-    console.log("📌 Status atual no banco:", pagamento.status);
     if (pagamento.status !== "PAGO") {
-      console.log("⚡ Chamando simularPixPago...");
       await this.simularPixPago(txid);
     }
 
-    const Atualizado = await this.prisma.pagamento.findFirst({
+    const atualizado = await this.prisma.pagamento.findFirst({
       where: { pixTxid: txid },
     });
 
-    console.log("✅ Status depois da verificação:", Atualizado?.status);
     return {
-      status: Atualizado?.status,
-      pedidoId: Atualizado?.pedidoId,
-      valor: Atualizado?.valor,
+      status: atualizado?.status,
+      pedidoId: atualizado?.pedidoId,
+      valor: atualizado?.valor,
     };
   }
+
+  // async verificarStatusPix(txid: string) {
+  //   const pagamento = await this.prisma.pagamento.findFirst({
+  //     where: {
+  //       pixTxid: txid,
+  //       empresaId: user.empresaId,
+  //     },
+  //   });
+
+  //   if (!pagamento) {
+  //     throw new NotFoundException("Pagamento não encontrado");
+  //   }
+
+  //   console.log("📌 Status atual no banco:", pagamento.status);
+  //   if (pagamento.status !== "PAGO") {
+  //     console.log("⚡ Chamando simularPixPago...");
+  //     await this.simularPixPago(txid);
+  //   }
+
+  //   const Atualizado = await this.prisma.pagamento.findFirst({
+  //     where: { pixTxid: txid },
+  //   });
+
+  //   console.log("✅ Status depois da verificação:", Atualizado?.status);
+  //   return {
+  //     status: Atualizado?.status,
+  //     pedidoId: Atualizado?.pedidoId,
+  //     valor: Atualizado?.valor,
+  //   };
+  // }
 
   async processarWebhookMP(body: any) {
     console.log("📩 WEBHOOK RECEBIDO:", body);
@@ -241,7 +275,6 @@ await this.prisma.pagamento.create({
     return { ok: true };
   }
 
-
   async confirmarPagamento(pagamentoId: number) {
     return this.prisma.$transaction(async (tx) => {
       const pagamento = await tx.pagamento.findUnique({
@@ -277,7 +310,10 @@ await this.prisma.pagamento.create({
       // 3. BAIXA ESTOQUE USANDO TX 👇
       for (const item of pagamento.pedido.itens) {
         await tx.produto.update({
-          where: { id: item.produtoId },
+          where: {
+            id: item.produtoId,
+            empresaId: pagamento.pedido.empresaId,
+          },
           data: {
             estoque: {
               decrement: item.quantidade,

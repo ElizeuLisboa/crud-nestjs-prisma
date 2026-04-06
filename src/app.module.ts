@@ -15,7 +15,11 @@ import { TransportadoraModule } from "./transportadoras/transportadora.module";
 import { PixModule } from "./pagamentos/pix/pix.module";
 import { AuditoriaModule } from "./auditoria/auditoria.module";
 import { AppController } from './app.controller';
+import { EmpresaController } from "./empresa/empresa.controller";
 
+@Module({
+  controllers: [EmpresaController],
+})
 
 
 @Module({
@@ -37,6 +41,6 @@ import { AppController } from './app.controller';
       storage: multer.memoryStorage(),
     }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, EmpresaController],
 })
 export class AppModule {}

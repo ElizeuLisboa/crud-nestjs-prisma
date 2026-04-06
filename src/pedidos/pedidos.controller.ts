@@ -4,7 +4,6 @@ import {
   Body,
   Get,
   Req,
-  Request,
   ForbiddenException,
   UseGuards,
   UseInterceptors,
@@ -13,12 +12,13 @@ import {
   Param,
   ParseIntPipe,
 } from "@nestjs/common";
-
 import { PedidosService } from "./pedidos.service";
 import { CreatePedidoDto } from "./dto/create-pedido.dto";
 import { JwtAuthGuard } from "../modules/auth/jwt-auth.guard";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Express } from "express";
+import { Request } from "express";
+import { getEmpresaId } from "../utils/empresa.util";
 
 @Controller("pedidos")
 export class PedidosController {
@@ -27,10 +27,6 @@ export class PedidosController {
   @Post("site")
   @UseGuards(JwtAuthGuard)
   criarPedidoSite(@Req() req: any, @Body() body: CreatePedidoDto) {
-    console.log("🔥 PASSOU NO CONTROLLER");
-    console.log("🔥 HEADERS:", req.headers.authorization);
-    console.log("🔥 USER:", req.user);
-
     return this.pedidosService.create(body, req.user); // ✅ CORRETO
   }
 
@@ -44,20 +40,14 @@ export class PedidosController {
   @UseGuards(JwtAuthGuard)
   @Get("meus")
   listarMeusPedidos(@Req() req: any) {
-    return this.pedidosService.findByCliente(req.user.id);
+    return this.pedidosService.findByCliente(req.user.id, req.user);
   }
 
   // 📊 Listar todos os pedidos (admin)
   @UseGuards(JwtAuthGuard)
   @Get("todos")
-  listarTodosPedidos(@Req() req: any) {
-    const user = req.user;
-
-    if (!["ADMIN", "SUPERUSER"].includes(user.role)) {
-      throw new ForbiddenException("Acesso negado");
-    }
-
-    return this.pedidosService.listarTodos();
+  listarTodos(@Req() req: Request) {
+    return this.pedidosService.listarTodos(req.user);
   }
 
   // 📷 Upload comprovante de entrega
@@ -82,14 +72,19 @@ export class PedidosController {
   @Post("venda-caixa")
   criarVendaCaixa(@Body() body: CreatePedidoDto, @Req() req: any) {
     const clienteId = req.user.id;
-    return this.pedidosService.criarVendaCaixa(body, clienteId);
+    return this.pedidosService.criarVendaCaixa(body, req.user);
   }
 
   // 🔎 Buscar pedido por ID
   @Get(":id")
-  buscar(@Param("id", ParseIntPipe) id: number) {
-    return this.pedidosService.buscarPorId(id);
+  buscarPorId(@Param("id") id: string, @Req() req: Request) {
+    return this.pedidosService.buscarPorId(Number(id), req.user);
   }
 
+  @Get()
+  listar(@Req() req: any) {
+    const empresaId = getEmpresaId(req.user, req);
 
+    return this.pedidosService.listarTodos(empresaId);
+  }
 }

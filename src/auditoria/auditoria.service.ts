@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateAuditoriaDto } from "./dto/create-sangria.dto";
 
+
 @Injectable()
 export class AuditoriaService {
   constructor(private prisma: PrismaService) {}
@@ -9,6 +10,7 @@ export class AuditoriaService {
   async criar(
     operadorId: number,
     autorizadoPor: number | null,
+    empresaId: number,
     data: {
       acao: string;
       valor?: number;
@@ -26,6 +28,7 @@ export class AuditoriaService {
         dadosExtras: data.dadosExtras ?? null,
         operadorId,
         autorizadoPor,
+        empresaId,
       },
     });
   }

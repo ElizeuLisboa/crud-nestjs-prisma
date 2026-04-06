@@ -6,7 +6,6 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreatePedidoDto } from "./dto/create-pedido.dto";
-// import { CriarPedidoDto } from "./dto/criar-pedido.dto";
 import { Express } from "express";
 
 @Injectable()
@@ -49,8 +48,15 @@ export class PedidosService {
       console.log("🧠 PRODUTO IDS:", produtoIds);
 
       const produtos = await this.prisma.produto.findMany({
-        where: { id: { in: produtoIds } },
+        where: {
+          id: { in: produtoIds },
+          empresaId: user.empresaId,
+        },
       });
+
+      // const produtos = await this.prisma.produto.findMany({
+      //   where: { id: { in: produtoIds } },
+      // });
 
       console.log("🧠 PRODUTOS ENCONTRADOS:", produtos);
 
@@ -110,7 +116,6 @@ export class PedidosService {
                   produtoId: item.produtoId,
                   quantidade: item.quantidade,
                   valor: valorUnitario,
-                  // omeProduto: produto.title,
                 };
               }),
             },
@@ -136,8 +141,11 @@ export class PedidosService {
   // LISTAR
   // ====================================================
 
-  async findAll() {
+  async findAll(user: any) {
     return this.prisma.pedido.findMany({
+      where: {
+        empresaId: user.empresaId,
+      },
       include: {
         cliente: true,
         itens: { include: { produto: true } },
@@ -145,10 +153,20 @@ export class PedidosService {
     });
   }
 
-  async findByCliente(clienteId: number) {
+  // async findAll() {
+  //   return this.prisma.pedido.findMany({
+  //     include: {
+  //       cliente: true,
+  //       itens: { include: { produto: true } },
+  //     },
+  //   });
+  // }
+
+  async findByCliente(clienteId: number, user: any) {
     return this.prisma.pedido.findMany({
       where: {
         clienteId,
+        empresaId: user.empresaId,
         status: { not: "CANCELADO" },
       },
       include: {
@@ -159,8 +177,25 @@ export class PedidosService {
     });
   }
 
-  async listarTodos() {
+  // async findByCliente(clienteId: number) {
+  //   return this.prisma.pedido.findMany({
+  //     where: {
+  //       clienteId,
+  //       status: { not: "CANCELADO" },
+  //     },
+  //     include: {
+  //       cliente: true,
+  //       itens: { include: { produto: true } },
+  //     },
+  //     orderBy: { createdAt: "desc" },
+  //   });
+  // }
+
+  async listarTodos(user: any) {
     return this.prisma.pedido.findMany({
+      where: {
+        empresaId: user.empresaId,
+      },
       include: {
         cliente: true,
         itens: { include: { produto: true } },
@@ -168,6 +203,16 @@ export class PedidosService {
       orderBy: { createdAt: "desc" },
     });
   }
+
+  // async listarTodos() {
+  //   return this.prisma.pedido.findMany({
+  //     include: {
+  //       cliente: true,
+  //       itens: { include: { produto: true } },
+  //     },
+  //     orderBy: { createdAt: "desc" },
+  //   });
+  // }
 
   // ====================================================
   // CONFIRMAR ENTREGA
@@ -212,6 +257,7 @@ export class PedidosService {
       comprovante = await this.prisma.comprovanteEntrega.create({
         data: {
           pedidoId,
+          empresaId: pedido.empresaId,
           nomeRecebedor,
           entregadorNome,
           fotoUrl,
@@ -295,9 +341,12 @@ export class PedidosService {
   // BUSCAR PEDIDO
   // ====================================================
 
-  async buscarPorId(id: number) {
-    const pedido = await this.prisma.pedido.findUnique({
-      where: { id },
+  async buscarPorId(id: number, user: any) {
+    const pedido = await this.prisma.pedido.findFirst({
+      where: {
+        id,
+        empresaId: user.empresaId,
+      },
       include: {
         itens: {
           include: { produto: true },
@@ -309,19 +358,36 @@ export class PedidosService {
       throw new NotFoundException("Pedido não encontrado");
     }
 
-    return {
-      numeroPedido: pedido.numeroPedido,
-      valorTotal: pedido.valorTotal,
-      status: pedido.status,
-
-      itens: pedido.itens.map((item) => ({
-        id: item.id,
-        quantidade: item.quantidade,
-        valor: item.valor,
-        produto: {
-          title: item.produto?.title || "Produto",
-        },
-      })),
-    };
+    return pedido;
   }
+
+  // async buscarPorId(id: number) {
+  //   const pedido = await this.prisma.pedido.findUnique({
+  //     where: { id },
+  //     include: {
+  //       itens: {
+  //         include: { produto: true },
+  //       },
+  //     },
+  //   });
+
+  //   if (!pedido) {
+  //     throw new NotFoundException("Pedido não encontrado");
+  //   }
+
+  //   return {
+  //     numeroPedido: pedido.numeroPedido,
+  //     valorTotal: pedido.valorTotal,
+  //     status: pedido.status,
+
+  //     itens: pedido.itens.map((item) => ({
+  //       id: item.id,
+  //       quantidade: item.quantidade,
+  //       valor: item.valor,
+  //       produto: {
+  //         title: item.produto?.title || "Produto",
+  //       },
+  //     })),
+  //   };
+  // }
 }
