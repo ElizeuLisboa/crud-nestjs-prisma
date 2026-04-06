@@ -84,7 +84,6 @@ export class PedidosController {
   @Get()
   listar(@Req() req: any) {
     const empresaId = getEmpresaId(req.user, req);
-
     return this.pedidosService.listarTodos(empresaId);
   }
 }
