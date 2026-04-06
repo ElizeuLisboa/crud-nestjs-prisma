@@ -53,11 +53,7 @@ export class PedidosService {
           empresaId: user.empresaId,
         },
       });
-
-      // const produtos = await this.prisma.produto.findMany({
-      //   where: { id: { in: produtoIds } },
-      // });
-
+      
       console.log("🧠 PRODUTOS ENCONTRADOS:", produtos);
 
       if (produtos.length !== produtoIds.length) {
@@ -153,15 +149,6 @@ export class PedidosService {
     });
   }
 
-  // async findAll() {
-  //   return this.prisma.pedido.findMany({
-  //     include: {
-  //       cliente: true,
-  //       itens: { include: { produto: true } },
-  //     },
-  //   });
-  // }
-
   async findByCliente(clienteId: number, user: any) {
     return this.prisma.pedido.findMany({
       where: {
@@ -177,20 +164,6 @@ export class PedidosService {
     });
   }
 
-  // async findByCliente(clienteId: number) {
-  //   return this.prisma.pedido.findMany({
-  //     where: {
-  //       clienteId,
-  //       status: { not: "CANCELADO" },
-  //     },
-  //     include: {
-  //       cliente: true,
-  //       itens: { include: { produto: true } },
-  //     },
-  //     orderBy: { createdAt: "desc" },
-  //   });
-  // }
-
   async listarTodos(user: any) {
     return this.prisma.pedido.findMany({
       where: {
@@ -203,16 +176,6 @@ export class PedidosService {
       orderBy: { createdAt: "desc" },
     });
   }
-
-  // async listarTodos() {
-  //   return this.prisma.pedido.findMany({
-  //     include: {
-  //       cliente: true,
-  //       itens: { include: { produto: true } },
-  //     },
-  //     orderBy: { createdAt: "desc" },
-  //   });
-  // }
 
   // ====================================================
   // CONFIRMAR ENTREGA
