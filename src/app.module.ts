@@ -16,6 +16,7 @@ import { PixModule } from "./pagamentos/pix/pix.module";
 import { AuditoriaModule } from "./auditoria/auditoria.module";
 import { AppController } from './app.controller';
 import { EmpresaController } from "./empresa/empresa.controller";
+import { EmpresaModule } from "./empresa/empresa.module";
 
 @Module({
   controllers: [EmpresaController],
@@ -25,6 +26,7 @@ import { EmpresaController } from "./empresa/empresa.controller";
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    EmpresaModule,
     PrismaModule,
     AuthModule,
     ClientesModule,
