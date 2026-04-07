@@ -28,7 +28,7 @@ export class ClientesController {
   findAll() {
     return this.clientesService.findAll();
   }
-
+  
   @Get("buscar-cpf/:cpf")
   async buscarPorCpf(@Param("cpf") cpf: string) {
     if (!cpf || cpf.trim() === "") {
