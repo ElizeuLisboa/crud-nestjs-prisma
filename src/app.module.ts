@@ -1,3 +1,52 @@
+// import { Module } from "@nestjs/common";
+// import { ConfigModule } from "@nestjs/config";
+// import { AuthModule } from "./modules/auth/auth.module";
+// import { ClientesModule } from "./clientes/clientes.module";
+// import { ProdutosModule } from "./produtos/produtos.module";
+// import { PedidosModule } from "./pedidos/pedidos.module";
+// import { PagamentosModule } from "./pagamentos/pagamentos.module";
+// import { PrismaModule } from "./prisma/prisma.module";
+// import { DashboardModule } from "./dashboard/dashboard.module";
+// import { ComprovanteModule } from "./comprovantes/comprovante.module";
+// import multer from "multer"; //
+// import { MulterModule } from "@nestjs/platform-express";
+// import { CaixaModule } from "./caixa/caixa.module";
+// import { TransportadoraModule } from "./transportadoras/transportadora.module";
+// import { PixModule } from "./pagamentos/pix/pix.module";
+// import { AuditoriaModule } from "./auditoria/auditoria.module";
+// import { AppController } from './app.controller';
+// import { EmpresaController } from "./empresa/empresa.controller";
+// import { EmpresaModule } from "./empresa/empresa.module";
+
+// @Module({
+//   controllers: [EmpresaController],
+// })
+
+
+// @Module({
+//   imports: [
+//     ConfigModule.forRoot({ isGlobal: true }),
+//     EmpresaModule,
+//     PrismaModule,
+//     AuthModule,
+//     ClientesModule,
+//     ProdutosModule,
+//     PedidosModule,
+//     CaixaModule,
+//     PagamentosModule,
+//     PixModule,
+//     DashboardModule,
+//     ComprovanteModule,
+//     TransportadoraModule,
+//     AuditoriaModule,
+//     MulterModule.register({
+//       storage: multer.memoryStorage(),
+//     }),
+//   ],
+//   controllers: [AppController, EmpresaController],
+// })
+// export class AppModule {}
+
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { AuthModule } from "./modules/auth/auth.module";
@@ -8,26 +57,20 @@ import { PagamentosModule } from "./pagamentos/pagamentos.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
 import { ComprovanteModule } from "./comprovantes/comprovante.module";
-import multer from "multer"; //
+import multer from "multer";
 import { MulterModule } from "@nestjs/platform-express";
 import { CaixaModule } from "./caixa/caixa.module";
 import { TransportadoraModule } from "./transportadoras/transportadora.module";
 import { PixModule } from "./pagamentos/pix/pix.module";
 import { AuditoriaModule } from "./auditoria/auditoria.module";
-import { AppController } from './app.controller';
-import { EmpresaController } from "./empresa/empresa.controller";
+import { AppController } from "./app.controller";
 import { EmpresaModule } from "./empresa/empresa.module";
-
-@Module({
-  controllers: [EmpresaController],
-})
-
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    EmpresaModule,
     PrismaModule,
+    EmpresaModule, // 👈 AQUI está tudo da empresa
     AuthModule,
     ClientesModule,
     ProdutosModule,
@@ -43,6 +86,6 @@ import { EmpresaModule } from "./empresa/empresa.module";
       storage: multer.memoryStorage(),
     }),
   ],
-  controllers: [AppController, EmpresaController],
+  controllers: [AppController], // ❗ NÃO colocar EmpresaController aqui
 })
 export class AppModule {}
