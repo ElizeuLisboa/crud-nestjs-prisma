@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { EmpresaController } from "./empresa.controller";
 
 @Injectable()
 export class EmpresaService {
@@ -14,6 +15,9 @@ export class EmpresaService {
       select: {
         id: true,
         nome: true,
+        cnpj: true,
+        endereco: true,
+        telefone: true,
         ativa: true,
       },
     });
