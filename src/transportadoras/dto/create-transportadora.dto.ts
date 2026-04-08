@@ -2,16 +2,16 @@ import { IsString, IsOptional, IsNumber } from "class-validator";
 
 export class CreateTransportadoraDto {
   @IsString()
-  numero: string;
+  numero?: string;
 
   @IsString()
-  nome: string;
+  nome?: string;
 
   @IsString()
-  cnpj: string;
+  cnpj?: string;
 
   @IsString()
-  telefone: string;
+  telefone?: string;
 
   @IsOptional()
   @IsNumber({}, { message: "Frete deve ser um número" })

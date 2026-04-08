@@ -1,9 +1,0 @@
-export declare enum AuditoriaAcaoEnum {
-    SANGRIA = "SANGRIA",
-    SUPRIMENTO = "SUPRIMENTO",
-    CANCELAMENTO = "CANCELAMENTO",
-    ESTORNO = "ESTORNO",
-    ABERTURA = "ABERTURA",
-    FECHAMENTO = "FECHAMENTO",
-    LIBERACAO = "LIBERACAO"
-}

@@ -2,19 +2,20 @@ import { IsNumber, IsOptional, IsString } from "class-validator";
 
 export class PagamentoCreditoDTO {
   @IsNumber()
-  pedidoId: number;
+  pedidoId?: number;
 
   @IsNumber()
-  clienteId: number;
+  clienteId?: number;
 
   @IsNumber()
-  valor: number;
+  valor?: number;
 
   @IsString()
-  descricao: string; // ← ADICIONADO
+  descricao?: string; // ← ADICIONADO
 
   @IsNumber()
-  parcelas: number;
+  @IsOptional()
+  parcelas?: number;
 
   @IsOptional()
   simulacaoParcelada?: boolean;

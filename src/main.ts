@@ -1,12 +1,9 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
-import { json, urlencoded } from "express";
-import { Request, Response, NextFunction } from "express";
+import { json } from "express";
 import { ValidationPipe } from "@nestjs/common";
 import { NestExpressApplication } from "@nestjs/platform-express";
-import cookieParser = require("cookie-parser");
-import { join } from "path";
-import * as bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -20,8 +17,10 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: ["http://localhost:3000",
-             "https://pdv-frontend-1xyf.onrender.com"],
+    origin: [
+      "http://localhost:3000",
+      "https://pdv-frontend-1xyf.onrender.com",
+    ],
     credentials: true,
   });
 
@@ -37,8 +36,6 @@ async function bootstrap() {
   const port = process.env.PORT || 4000;
   console.log(`Servidor rodando na porta ${port}`);
   await app.listen(port);
-
-  // await app.listen(4000);
 }
 
 bootstrap();

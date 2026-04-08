@@ -1,5 +1,17 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe,  UseGuards,
-  Request, ForbiddenException, NotFoundException, BadRequestException,
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  ParseIntPipe,
+  UseGuards,
+  Request,
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
 } from "@nestjs/common";
 import { ClientesService } from "./clientes.service";
 import { UpdateClienteDto } from "./dto/update-cliente.dto";
@@ -28,7 +40,7 @@ export class ClientesController {
   findAll() {
     return this.clientesService.findAll();
   }
-  
+
   @Get("buscar-cpf/:cpf")
   async buscarPorCpf(@Param("cpf") cpf: string) {
     if (!cpf || cpf.trim() === "") {
@@ -44,7 +56,7 @@ export class ClientesController {
     return this.clientesService.findOne(id);
   }
 
-   @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN", "SUPERUSER", "CAIXA")
   @Post("cadastro-rapido")
   async cadastroRapido(@Body() dto: CreateClienteDto) {

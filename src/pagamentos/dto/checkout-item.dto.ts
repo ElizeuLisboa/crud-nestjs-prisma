@@ -3,15 +3,15 @@ import { IsInt, IsString, IsNumber } from 'class-validator';
 
 export class CheckoutItemDto {
   @IsInt()
-  produtoId: number;
+  produtoId?: number;
 
   @IsString()
-  nome: string;
+  nome?: string;
 
   @IsNumber()
-  preco: number;
+  preco?: number;
 
   @IsInt()
-  quantidade: number;
+  quantidade?: number;
 }
 

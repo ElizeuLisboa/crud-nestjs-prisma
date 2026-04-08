@@ -3,19 +3,19 @@ import { IsString, IsNotEmpty, IsNumber, Min, IsOptional } from "class-validator
 export class CreateProdutoDto {
   @IsString()
   @IsNotEmpty()
-  title: string;
+  title?: string;
 
   @IsString()
   @IsNotEmpty()
-  description: string;
+  description?: string;
 
   @IsNumber()
   @Min(0)
-  price: number;
+  price?: number;
 
   @IsString()
   @IsNotEmpty()
-  image: string;
+  image?: string;
 
   @IsString()
   @IsOptional()

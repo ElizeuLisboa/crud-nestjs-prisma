@@ -1,24 +1,25 @@
-import { IsEmail, 
-  IsOptional, 
-  ValidateIf, 
-  IsString, 
-  Length, 
-  MaxLength,
-  MinLength, 
-  IsEnum, } from "class-validator";
-import { Role } from "../../common/enums/role"; 
-import {IsCPF } from '../../validators/is-cpf.validator'
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  Length,
+} from "class-validator";
+import { IsCPF } from "../../validators/is-cpf.validator";
 
 export class CreateClienteDto {
   @IsString()
-  cpf: string;
+  @Length(11, 11)
+  @IsCPF()
+  cpf!: string;
 
   @IsString()
-  nome: string;
+  @Length(3, 100)
+  nome!: string | undefined;
 
   @IsEmail()
-  email: string;
+  email!: string | undefined;
 
   @IsString()
-  telefone: string;
+  @IsOptional()
+  telefone!: string;
 }

@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { CreateClienteDto } from "./dto/create-cliente.dto";
 import { UpdateClienteDto } from "./dto/update-cliente.dto";
 import * as bcrypt from "bcrypt";
 import { CreateClientePublicoDto } from "./dto/create-cliente-publico.dto";
@@ -55,20 +56,19 @@ export class ClientesService {
     });
   }
 
-  async cadastroRapido(data: {
-    nome: string;
-    email: string;
-    cpf: string;
-    telefone: string;
-  }) {
+  async cadastroRapido(data: CreateClienteDto) {
     return this.prisma.cliente.create({
       data: {
-        ...data,
+        nome: data.nome!,
+        email: data.email!,
+        cpf: data.cpf!,
+        telefone: data.telefone!,
+
         password: await bcrypt.hash("123456@1234", 10),
         role: Role.CLIENTE,
 
         empresa: {
-          connect: { id: 1 }, // empresa padrão
+          connect: { id: 1 },
         },
 
         cep: null,
@@ -78,7 +78,7 @@ export class ClientesService {
       },
     });
   }
-  
+
   async atualizarCadastroRapido(cpf: string, data: any) {
     const updateData = { ...data };
 

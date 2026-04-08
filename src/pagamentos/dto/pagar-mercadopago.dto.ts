@@ -2,20 +2,20 @@ import { Type } from "class-transformer";
 
 export class PagarMercadoPagoDto {
   @Type(() => Number)
-  pedidoId: number;
+  pedidoId?: number;
 
-  token: string;
-
-  @Type(() => Number)
-  valor: number;
+  token?: string;
 
   @Type(() => Number)
-  installments: number;
+  valor?: number;
+
+  @Type(() => Number)
+  installments?: number;
 
   @Type(() => String )
-  paymentMethodId: string;
+  paymentMethodId?: string;
 
-  payer: {
+  payer?: {
     identification: {
       type: "CPF";
       number: string;

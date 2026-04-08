@@ -2,7 +2,7 @@ import { IsString, IsNumber, IsOptional, IsObject, Min } from "class-validator";
 
 export class CreateAuditoriaDto {
   @IsString()
-  acao: string; // "SANGRIA", "SUPRIMENTO", etc
+  acao!: string; // ✅ corrigido
 
   @IsOptional()
   @IsNumber()

@@ -23,7 +23,6 @@ export class PixService {
       "000201",
       "010212",
 
-      // Merchant Account
       "26" +
         (4 + this.chave.length).toString().padStart(2, "0") +
         "0014BR.GOV.BCB.PIX" +
@@ -33,21 +32,22 @@ export class PixService {
       "52040000",
       "5303986",
 
-      // Valor
       "54" + valorFormatado.length.toString().padStart(2, "0") + valorFormatado,
 
       "5802BR",
 
-      // Nome recebedor
-      "59" + nome.length.toString().padStart(2, "0") + nome,
+      "59" + (nome?.length || 0).toString().padStart(2, "0") + (nome || ""),
 
       "6010SAO PAULO",
 
-      // Descrição
-      "62" + descricao.length.toString().padStart(2, "0") + descricao,
-    ].join("");
+      "62" +
+        (descricao?.length || 0).toString().padStart(2, "0") +
+        (descricao || ""),
+    ].join(""); // ✅ ESSENCIAL
 
     const payloadComCRC = payload + "6304" + this.crc16(payload);
+
+  
 
     // 👉 GERAR UM TXID SIMPLES
     const txid = `PIX-${Date.now()}`;

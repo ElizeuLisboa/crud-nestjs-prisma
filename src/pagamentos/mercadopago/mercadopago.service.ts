@@ -57,6 +57,7 @@ export class MercadoPagoService {
 
   async pagarComCartao(payment: PagarMercadoPagoDto) {
     const body = {
+      
       transaction_amount: Number(payment.valor),
       token: payment.token,
       installments: Number(payment.installments),
@@ -71,7 +72,7 @@ export class MercadoPagoService {
         email: "cliente@email.com",
         identification: {
           type: "CPF",
-          number: payment.payer.identification.number,
+          number: payment.payer?.identification.number || "00000000000",
         },
       },
     };

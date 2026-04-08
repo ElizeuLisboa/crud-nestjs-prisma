@@ -1,31 +1,35 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from "class-validator";
+import { IsEmail, IsString, MinLength, Length } from "class-validator";
+import { IsCPF } from "../../validators/is-cpf.validator";
 
 export class CreateClientePublicoDto {
   @IsString()
-  nome: string;
+  @Length(3, 100)
+  nome!: string;
 
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
-  cpf: string;
+  @Length(11, 11)
+  @IsCPF()
+  cpf!: string;
 
   @IsString()
-  telefone: string;
+  telefone!: string;
 
   @IsString()
-  cep: string;
+  cep!: string;
 
   @IsString()
-  logradouro: string;
+  logradouro!: string;
 
   @IsString()
-  cidade: string;
+  cidade!: string;
 
   @IsString()
-  estado: string;
+  estado!: string;
 
   @IsString()
   @MinLength(6)
-  password: string;
+  password!: string;
 }
