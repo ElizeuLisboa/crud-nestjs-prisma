@@ -17,6 +17,7 @@ model Empresa {
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
+  usuarios        Usuario[]
   clientes        Cliente[]
   categorias      CategoriaProduto[]
   produtos        Produto[]
@@ -53,6 +54,21 @@ model Cliente {
   caixaPedidos          Pedido[]        @relation("CaixaPedidos")
   pedidos               Pedido[]        @relation("ClientePedidos")
 }
+
+model Usuario {
+  id         Int      @id @default(autoincrement())
+  nome       String
+  email      String   @unique
+  password   String
+  role       Role
+
+  empresaId  Int?
+  empresa    Empresa? @relation(fields: [empresaId], references: [id])
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
 
 model AuditoriaAcao {
   id            Int      @id @default(autoincrement())

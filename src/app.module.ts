@@ -16,6 +16,7 @@ import { PixModule } from "./pagamentos/pix/pix.module";
 import { AuditoriaModule } from "./auditoria/auditoria.module";
 import { AppController } from "./app.controller";
 import { EmpresaModule } from "./empresa/empresa.module";
+import { UsuarioModule } from "./usuario/usuario.module";
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { EmpresaModule } from "./empresa/empresa.module";
     ComprovanteModule,
     TransportadoraModule,
     AuditoriaModule,
+    UsuarioModule,
     MulterModule.register({
       storage: multer.memoryStorage(),
     }),
