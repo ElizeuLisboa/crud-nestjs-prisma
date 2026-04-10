@@ -8,30 +8,28 @@ datasource db {
 }
 
 model Empresa {
-  id              Int                @id @default(autoincrement())
+  id              Int                  @id @default(autoincrement())
   nome            String
   cnpj            String
   endereco        String
   telefone        String
-  ativa           Boolean            @default(true)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-
-  usuarios        Usuario[]
-  clientes        Cliente[]
-  categorias      CategoriaProduto[]
-  produtos        Produto[]
-  pedidos         Pedido[]
-  itensPedido     ItemPedido[]
-  pagamentos      Pagamento[]
-  transportadoras Transportadora[]
-
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  ativa           Boolean              @default(true)
   auditorias      AuditoriaAcao[]
+  categorias      CategoriaProduto[]
+  clientes        Cliente[]
   comprovantes    ComprovanteEntrega[]
   fretes          Frete[]
+  itensPedido     ItemPedido[]
+  pagamentos      Pagamento[]
   parcelas        ParcelaPagamento[]
-  promocoes       Promocao[]
+  pedidos         Pedido[]
   statusPedidos   PedidoStatus[]
+  produtos        Produto[]
+  promocoes       Promocao[]
+  transportadoras Transportadora[]
+  usuarios        Usuario[]
 }
 
 model Cliente {
@@ -56,19 +54,16 @@ model Cliente {
 }
 
 model Usuario {
-  id         Int      @id @default(autoincrement())
-  nome       String
-  email      String   @unique
-  password   String
-  role       Role
-
-  empresaId  Int?
-  empresa    Empresa? @relation(fields: [empresaId], references: [id])
-
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  nome      String
+  email     String   @unique
+  password  String
+  role      Role
+  empresaId Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  empresa   Empresa? @relation(fields: [empresaId], references: [id])
 }
-
 
 model AuditoriaAcao {
   id            Int      @id @default(autoincrement())
@@ -80,11 +75,9 @@ model AuditoriaAcao {
   valor         Float?
   dadosExtras   Json?
   referenciaId  Int?
-
   empresaId     Int
-  empresa       Empresa? @relation(fields: [empresaId], references: [id])
-
   autorizador   Cliente? @relation("AutorizadorAuditoria", fields: [autorizadoPor], references: [id])
+  empresa       Empresa  @relation(fields: [empresaId], references: [id])
   operador      Cliente  @relation("OperadorAuditoria", fields: [operadorId], references: [id])
 }
 
@@ -171,11 +164,11 @@ model Pedido {
   updatedAt       DateTime            @updatedAt
   valorTotal      Float               @default(0)
   status          String              @default("PENDENTE")
-  origem          String              @default("PDV") // 👈 AQUI
   entregue        Boolean             @default(false)
   caixaId         Int?
   metodoPagamento String              @default("DESCONHECIDO")
   empresaId       Int
+  origem          String              @default("PDV")
   comprovantes    ComprovanteEntrega?
   fretes          Frete[]
   itens           ItemPedido[]
@@ -205,10 +198,8 @@ model PedidoStatus {
   pedidoId   Int
   status     String
   dataStatus DateTime
-
   empresaId  Int
-  empresa    Empresa? @relation(fields: [empresaId], references: [id])
-
+  empresa    Empresa  @relation(fields: [empresaId], references: [id])
   pedido     Pedido   @relation(fields: [pedidoId], references: [id])
 }
 
@@ -221,10 +212,8 @@ model ComprovanteEntrega {
   createdAt      DateTime @default(now())
   entregadorNome String   @default("Não informado")
   numeroPedido   String?
-
   empresaId      Int
-  empresa        Empresa? @relation(fields: [empresaId], references: [id])
-
+  empresa        Empresa  @relation(fields: [empresaId], references: [id])
   pedido         Pedido   @relation(fields: [pedidoId], references: [id])
 }
 
@@ -238,10 +227,8 @@ model Frete {
   prazoEntrega     Int             @default(3)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
-
   empresaId        Int
-  empresa          Empresa? @relation(fields: [empresaId], references: [id])
-
+  empresa          Empresa         @relation(fields: [empresaId], references: [id])
   pedido           Pedido          @relation(fields: [pedidoId], references: [id])
   transportadora   Transportadora? @relation(fields: [transportadoraId], references: [id])
 }
@@ -271,8 +258,6 @@ model Pagamento {
   forma           String
   valor           Float
   status          String             @default("PENDENTE")
-  metodo          String?
-  transactionId   String?
   parcelas        Int?
   criadoEm        DateTime           @default(now())
   codigoExterno   String?            @unique
@@ -282,6 +267,8 @@ model Pagamento {
   pixQrCodeBase64 String?
   pixStatus       String?
   pixTxid         String?
+  metodo          String?
+  transactionId   String?
   cliente         Cliente?           @relation(fields: [clienteId], references: [id])
   empresa         Empresa            @relation(fields: [empresaId], references: [id])
   pedido          Pedido             @relation(fields: [pedidoId], references: [id])
@@ -296,10 +283,8 @@ model ParcelaPagamento {
   vencimento    DateTime
   pago          Boolean   @default(false)
   pagoEm        DateTime?
-
   empresaId     Int
-  empresa       Empresa? @relation(fields: [empresaId], references: [id])
-
+  empresa       Empresa   @relation(fields: [empresaId], references: [id])
   pagamento     Pagamento @relation(fields: [pagamentoId], references: [id])
 }
 
@@ -311,10 +296,8 @@ model Promocao {
   dataFim     DateTime
   dataInicio  DateTime
   freteGratis Boolean
-
   empresaId   Int
-  empresa     Empresa? @relation(fields: [empresaId], references: [id])
-
+  empresa     Empresa   @relation(fields: [empresaId], references: [id])
   produtos    Produto[] @relation("ProdutosPromocao")
 }
 
