@@ -4,6 +4,7 @@ import {
   Body,
   Get,
   Req,
+  // Request,
   ForbiddenException,
   UseGuards,
   UseInterceptors,
@@ -46,7 +47,7 @@ export class PedidosController {
   // 📊 Listar todos os pedidos (admin)
   @UseGuards(JwtAuthGuard)
   @Get("todos")
-  listarTodos(@Req() req: Request) {
+  listarTodos(@Req() req: any) {
     return this.pedidosService.listarTodos(req.user);
   }
 
@@ -58,12 +59,14 @@ export class PedidosController {
     @Param("id", ParseIntPipe) id: number,
     @UploadedFile() file: Express.Multer.File,
     @Body() body: { nomeRecebedor: string; entregadorNome: string },
+    @Req() req: Request, // 🔥 TIPADO CORRETAMENTE
   ) {
     return this.pedidosService.confirmarEntrega(
       id,
       body.nomeRecebedor,
       body.entregadorNome,
       file,
+      req.user,
     );
   }
 

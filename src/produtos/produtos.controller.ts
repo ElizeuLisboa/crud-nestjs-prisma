@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Query,
+  Req,
   Param,
   UploadedFile,
   UseGuards,
@@ -11,6 +12,7 @@ import {
   BadRequestException,
   NotFoundException,
   Request,
+  ParseIntPipe,
 } from "@nestjs/common";
 import { Express } from "express";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -58,11 +60,11 @@ export class ProdutosController {
   }
 
   @Get("buscar")
-  buscar(@Query("termo") termo: string) {
+  buscarProdutos(@Query("q") termo: string, @Req() req: any) {
     if (!termo?.trim()) {
       throw new BadRequestException("Nenhum termo informado");
     }
-    return this.produtosService.buscarProdutos(termo);
+    return this.produtosService.buscarProdutos(termo, req.user);
   }
 
   @Get("familias")
@@ -76,25 +78,17 @@ export class ProdutosController {
   }
 
   @Get()
-  async listar(
-    @Query("familia") familia?: string,
-    @Query("nome") nome?: string,
-  ) {
-    return this.produtosService.listar({
-      familia,
-      nome,
-    });
+  async listar(@Query() filtros: any, @Req() req: any) {
+    const empresaHeader = req.headers["x-empresa-id"];
+    return this.produtosService.listar(filtros, req.user);
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string) {
+  findOne(@Param("id", ParseIntPipe) id: string, @Req() req: any) {
     const parsedId = Number(id);
     if (isNaN(parsedId)) {
       throw new BadRequestException("ID inválido");
     }
-    return this.produtosService.findOne(parsedId);
+    return this.produtosService.findOne(parsedId, req.user);
   }
-
 }
-
-

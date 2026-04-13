@@ -14,13 +14,31 @@ import { PrismaClient, Role } from "@prisma/client";
 export class ClientesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
-    return this.prisma.cliente.findMany();
+  // async findAll() {
+  //   return this.prisma.cliente.findMany();
+  // }
+
+  async findAll(user: any) {
+    const whereBase =
+      user.role === "SUPERUSER" ? {} : { empresaId: user.empresaId };
+
+    return this.prisma.cliente.findMany({
+      where: {
+        ...whereBase,
+      },
+    });
   }
 
-  async findOne(id: number) {
-    const cliente = await this.prisma.cliente.findUnique({
-      where: { id },
+  async findOne(id: number, user: any) {
+    const whereBase =
+      user.role === "SUPERUSER" 
+      ? 
+      {} : { empresaId: user.empresaId };
+
+    const cliente = await this.prisma.cliente.findFirst({
+      where: {
+        ...whereBase,
+      },
     });
 
     if (!cliente) {
@@ -30,7 +48,7 @@ export class ClientesService {
     return cliente;
   }
 
-  async update(id: number, data: UpdateClienteDto) {
+  async update(id: number, data: UpdateClienteDto, user: any) {
     const updateData: any = { ...data };
 
     if (data.password) {
@@ -38,25 +56,33 @@ export class ClientesService {
     }
 
     return this.prisma.cliente.update({
-      where: { id },
+      where: {
+        id,
+        empresaId: user.empresaId,
+      },
       data: updateData,
     });
   }
 
-  async remove(id: number) {
-    await this.findOne(id);
-    return this.prisma.cliente.delete({
-      where: { id },
+  async remove(id: number, user: any) {
+    return this.prisma.cliente.deleteMany({
+      where: {
+        id,
+        empresaId: user.empresaId,
+      },
     });
   }
 
-  async buscarPorCpf(cpf: string) {
-    return this.prisma.cliente.findUnique({
-      where: { cpf },
+  async buscarPorCpf(cpf: string, user: any) {
+    return this.prisma.cliente.findFirst({
+      where: {
+        cpf,
+        empresaId: user.empresaId,
+      },
     });
   }
 
-  async cadastroRapido(data: CreateClienteDto) {
+  async cadastroRapido(data: CreateClienteDto, user: any) {
     return this.prisma.cliente.create({
       data: {
         nome: data.nome!,
@@ -68,7 +94,7 @@ export class ClientesService {
         role: Role.CLIENTE,
 
         empresa: {
-          connect: { id: 1 },
+          connect: { id: user.empresaId }, // 🔥 CORRETO
         },
 
         cep: null,
@@ -79,7 +105,7 @@ export class ClientesService {
     });
   }
 
-  async atualizarCadastroRapido(cpf: string, data: any) {
+  async atualizarCadastroRapido(cpf: string, data: any, user: any) {
     const updateData = { ...data };
 
     if (data.password) {

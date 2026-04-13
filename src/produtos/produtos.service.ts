@@ -23,7 +23,7 @@ export type CreateProdutoDTO = {
 export class ProdutosService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: CreateProdutoDTO) {
+  async create(data: CreateProdutoDTO, user?: any) {
     return this.prisma.produto.create({
       data: {
         title: data.title,
@@ -42,7 +42,7 @@ export class ProdutosService {
         },
 
         empresa: {
-          connect: { id: 1 }, // 👈 temporário
+          connect: { id: user.empresaId }, // ✅ CORRETO
         },
       },
     });
@@ -70,7 +70,6 @@ export class ProdutosService {
     });
   }
 
-  
   async findByBarcode(codigo: string) {
     if (!codigo || codigo.trim() === "") return null;
 
@@ -79,22 +78,34 @@ export class ProdutosService {
     });
   }
 
-  async listar(params: { familia?: string; nome?: string }) {
-    const { familia, nome } = params;
+  async listar(
+    filtros: { familia?: string; nome?: string },
+    user: any,
+    empresaHeader?: number,
+  ) {
+    let whereBase;
+
+    if (user.role === "SUPERUSER") {
+      whereBase = empresaHeader ? { empresaId: empresaHeader } : {};
+    } else {
+      whereBase = { empresaId: user.empresaId };
+    }
 
     return this.prisma.produto.findMany({
       where: {
-        ...(nome && {
+        ...whereBase,
+
+        ...(filtros.nome && {
           title: {
-            contains: nome,
+            contains: filtros.nome,
             mode: "insensitive",
           },
         }),
 
-        ...(familia && {
+        ...(filtros.familia && {
           categoria: {
             familia: {
-              id: Number(familia),
+              id: Number(filtros.familia),
             },
           },
         }),
@@ -141,26 +152,21 @@ export class ProdutosService {
     });
   }
 
-  async findAll(filtros: {
-    familiaId?: number;
-    categoriaId?: number;
-    nome?: string;
-  }) {
-    const where: Prisma.ProdutoWhereInput = {};
+  async findAll(filtros: any, user: any, empresaHeader?: number) {
+    const where: Prisma.ProdutoWhereInput = {
+      empresaId: user.empresaId, // ✅ BASE
+    };
 
-    // 🔹 filtro por família (via categoria)
     if (filtros.familiaId) {
       where.categoria = {
         familiaId: filtros.familiaId,
       };
     }
 
-    // 🔹 filtro por categoria específica
     if (filtros.categoriaId) {
       where.categoriaId = filtros.categoriaId;
     }
 
-    // 🔹 filtro por nome
     if (filtros.nome && filtros.nome.trim() !== "") {
       where.title = {
         contains: filtros.nome,
@@ -168,8 +174,17 @@ export class ProdutosService {
       };
     }
 
+    let whereBase;
+    if (user.role === "SUPERUSER") {
+      whereBase = empresaHeader ? { empresaId: empresaHeader } : {};
+    } else {
+      whereBase = { empresaId: user.empresaId };
+    }
+
     return this.prisma.produto.findMany({
-      where,
+      where: {
+        ...whereBase,
+      },
       include: {
         categoria: {
           include: {
@@ -183,13 +198,12 @@ export class ProdutosService {
     });
   }
 
-  async findOne(id: number) {
-    if (!id || isNaN(id)) {
-      throw new BadRequestException("ID inválido");
-    }
-
-    const produto = await this.prisma.produto.findUnique({
-      where: { id },
+  async findOne(id: number, user: any) {
+    const produto = await this.prisma.produto.findFirst({
+      where: {
+        id,
+        empresaId: user.empresaId, // ✅ SEGURANÇA
+      },
       include: {
         categoria: {
           select: {
@@ -213,7 +227,7 @@ export class ProdutosService {
     return produto;
   }
 
-  async buscarProdutos(query: string) {
+  async buscarProdutos(query: string, user: any) {
     const termo = query?.trim();
     if (!termo) return [];
 
@@ -224,6 +238,7 @@ export class ProdutosService {
 
       const produto = await this.prisma.produto.findFirst({
         where: {
+          empresaId: user.empresaId,
           OR: [{ id }, { codigoBarras: termo }],
         },
       });
@@ -233,6 +248,7 @@ export class ProdutosService {
 
     return this.prisma.produto.findMany({
       where: {
+        empresaId: user.empresaId,
         title: {
           contains: termo,
           mode: "insensitive",

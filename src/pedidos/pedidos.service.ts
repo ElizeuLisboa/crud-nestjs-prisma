@@ -53,7 +53,7 @@ export class PedidosService {
           empresaId: user.empresaId,
         },
       });
-      
+
       console.log("🧠 PRODUTOS ENCONTRADOS:", produtos);
 
       if (produtos.length !== produtoIds.length) {
@@ -93,7 +93,6 @@ export class PedidosService {
             clienteId: user.id,
             valorTotal,
             status: "PENDENTE",
-            // origem: "SITE",
 
             itens: {
               create: data.itens.map((item) => {
@@ -133,14 +132,13 @@ export class PedidosService {
     }
   }
 
-  // ====================================================
-  // LISTAR
-  // ====================================================
-
   async findAll(user: any) {
+    const whereBase =
+      user.role === "SUPERUSER" ? {} : { empresaId: user.empresaId };
+
     return this.prisma.pedido.findMany({
       where: {
-        empresaId: user.empresaId,
+        ...whereBase,
       },
       include: {
         cliente: true,
@@ -177,18 +175,18 @@ export class PedidosService {
     });
   }
 
-  // ====================================================
-  // CONFIRMAR ENTREGA
-  // ====================================================
-
   async confirmarEntrega(
     pedidoId: number,
     nomeRecebedor: string,
     entregadorNome: string,
     file: Express.Multer.File,
+    user: any,
   ) {
-    const pedido = await this.prisma.pedido.findUnique({
-      where: { id: pedidoId },
+    const pedido = await this.prisma.pedido.findFirst({
+      where: {
+        id: pedidoId,
+        empresaId: user.empresaId, // 🔥 ESSENCIAL
+      },
     });
 
     if (!pedido) {
@@ -243,10 +241,6 @@ export class PedidosService {
     };
   }
 
-  // ====================================================
-  // VENDA PELO CAIXA
-  // ====================================================
-
   async criarVendaCaixa(data: CreatePedidoDto, user: any) {
     if (!user?.id) {
       throw new UnauthorizedException("Usuário não identificado");
@@ -257,7 +251,10 @@ export class PedidosService {
     const produtoIds = data.itens.map((item) => item.produtoId);
 
     const produtos = await this.prisma.produto.findMany({
-      where: { id: { in: produtoIds } },
+      where: {
+        id: { in: produtoIds },
+        empresaId: user.empresaId, // 🔥 FALTAVA
+      },
     });
 
     const produtosMap = new Map(produtos.map((p) => [p.id, p]));
@@ -300,10 +297,6 @@ export class PedidosService {
     });
   }
 
-  // ====================================================
-  // BUSCAR PEDIDO
-  // ====================================================
-
   async buscarPorId(id: number, user: any) {
     const pedido = await this.prisma.pedido.findFirst({
       where: {
@@ -323,34 +316,4 @@ export class PedidosService {
 
     return pedido;
   }
-
-  // async buscarPorId(id: number) {
-  //   const pedido = await this.prisma.pedido.findUnique({
-  //     where: { id },
-  //     include: {
-  //       itens: {
-  //         include: { produto: true },
-  //       },
-  //     },
-  //   });
-
-  //   if (!pedido) {
-  //     throw new NotFoundException("Pedido não encontrado");
-  //   }
-
-  //   return {
-  //     numeroPedido: pedido.numeroPedido,
-  //     valorTotal: pedido.valorTotal,
-  //     status: pedido.status,
-
-  //     itens: pedido.itens.map((item) => ({
-  //       id: item.id,
-  //       quantidade: item.quantidade,
-  //       valor: item.valor,
-  //       produto: {
-  //         title: item.produto?.title || "Produto",
-  //       },
-  //     })),
-  //   };
-  // }
 }
