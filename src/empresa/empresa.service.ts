@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException, } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { EmpresaController } from "./empresa.controller";
 
@@ -44,4 +44,18 @@ export class EmpresaService {
       data,
     });
   }
+
+async findOne(id: number) {
+  const empresa = await this.prisma.empresa.findUnique({
+    where: { id },
+  });
+
+  if (!empresa) {
+    throw new NotFoundException("Empresa não encontrada");
+  }
+
+  return empresa;
+}
+
+
 }

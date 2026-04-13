@@ -29,6 +29,11 @@ export class EmpresaController {
     return this.empresaService.delete(Number(id));
   }
 
+  @Get(":id")
+  findOne(@Param("id") id: string) {
+    return this.empresaService.findOne(Number(id));
+  }
+
   @Patch(":id/toggle")
   toggle(@Param("id") id: string, @Body("ativa") ativa: boolean) {
     return this.empresaService.toggle(Number(id), ativa);
