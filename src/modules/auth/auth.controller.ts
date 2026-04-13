@@ -12,13 +12,19 @@ import { AuthService } from "./auth.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import * as bcrypt from "bcrypt";
 import { LoginDto } from "./login.dto";
+import { LoginUnificadoDto } from "./login-unificado.dto";
 
 @Controller("auth")
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
   ) {}
+
+  @Post("login-unificado")
+  async loginUnificado(@Body() dto: LoginUnificadoDto) {
+    return this.authService.loginUnificado(dto);
+  }
 
   @Post("login")
   @HttpCode(HttpStatus.OK)

@@ -25,7 +25,6 @@ export class UsuarioService {
       throw new UnauthorizedException("Usuário não encontrado");
     }
 
-    // const senhaValida = await bcrypt.compare(dto.password, user.password);
 
     const payload = {
       sub: user.id,
@@ -34,10 +33,6 @@ export class UsuarioService {
     };
 
     const token = this.jwtService.sign(payload);
-
-    // if (!senhaValida) {
-    //   throw new UnauthorizedException("Senha inválida");
-    // }
 
     return {
       token,
@@ -49,11 +44,6 @@ export class UsuarioService {
       },
     };
 
-    // return {
-    //   id: user.id,
-    //   nome: user.nome,
-    //   role: user.role,
-    //   empresaId: user.empresaId,
-    // };
+
   }
 }

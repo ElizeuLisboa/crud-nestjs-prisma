@@ -8,6 +8,7 @@ import {
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../../prisma/prisma.service";
 import { AuthController } from "./auth.controller";
+import { LoginUnificadoDto } from "./login-unificado.dto";
 import * as bcrypt from "bcrypt";
 
 @Injectable()
@@ -16,6 +17,74 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
   ) {}
+
+  async loginUnificado(dto: LoginUnificadoDto) {
+    const { login, password } = dto;
+
+    // 🔎 1. BUSCAR CLIENTE
+    const cliente = await this.prisma.cliente.findFirst({
+      where: {
+        OR: [{ email: login }, { telefone: login }, { nome: login }],
+      },
+    });
+
+    if (cliente) {
+      // 🔐 validar senha (ajuste conforme seu hash)
+      const senhaValida = await bcrypt.compare(password, cliente.password);
+
+      if (!senhaValida) {
+        throw new UnauthorizedException("Senha inválida");
+      }
+
+      const token = this.jwtService.sign({
+        sub: cliente.id,
+        tipo: "cliente",
+      });
+
+      return {
+        token,
+        user: cliente,
+        tipo: "cliente",
+      };
+    }
+
+    // 🔎 2. BUSCAR USUARIO
+    const usuario = await this.prisma.usuario.findFirst({
+      where: {
+        OR: [{ email: login }, { nome: login }],
+      },
+    });
+
+    if (usuario) {
+      const senhaValida = await bcrypt.compare(password, usuario.password);
+
+      if (!senhaValida) {
+        throw new UnauthorizedException("Senha inválida");
+      }
+
+      const token = this.jwtService.sign({
+        sub: usuario.id,
+        role: usuario.role,
+        empresaId: usuario.empresaId,
+        tipo: "usuario",
+      });
+
+      return {
+        token,
+        user: {
+          id: usuario.id,
+          nome: usuario.nome,
+          email: usuario.email,
+          role: usuario.role,
+          empresaId: usuario.empresaId,
+        },
+        tipo: "usuario",
+      };
+    }
+
+    // ❌ NÃO ACHOU NADA
+    throw new UnauthorizedException("Credenciais inválidas");
+  }
 
   async validarUsuario(email: string, senha: string) {
     const cliente = await this.prisma.cliente.findUnique({
