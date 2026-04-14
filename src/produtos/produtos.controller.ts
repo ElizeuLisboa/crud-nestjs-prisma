@@ -77,11 +77,27 @@ export class ProdutosController {
     return this.produtosService.listarCategorias();
   }
 
+  // @Get()
+  // async listar(@Query() filtros: any, @Req() req: any) {
+  //   const empresaHeader = req.headers["x-empresa-id"];
+  //   console.log("USER:", req.user);
+  //   console.log("HEADER EMPRESA:", req.headers["x-empresa-id"]);
+  //   return this.produtosService.listar(filtros, req.user);
+  // }
+
+  @UseGuards(JwtAuthGuard)
   @Get()
-  async listar(@Query() filtros: any, @Req() req: any) {
+  listar(@Query() filtros: any, @Req() req: any) {
     const empresaHeader = req.headers["x-empresa-id"];
+
+    console.log("USER:", req.user); // 🔥 DEBUG
     console.log("HEADER EMPRESA:", empresaHeader);
-    return this.produtosService.listar(filtros, req.user);
+
+    return this.produtosService.listar(
+      filtros,
+      req.user,
+      empresaHeader ? Number(empresaHeader) : undefined,
+    );
   }
 
   @Get(":id")
