@@ -78,18 +78,65 @@ export class ProdutosService {
     });
   }
 
-  async listar(
-    filtros: { familia?: string; nome?: string },
-    user: any,
-    empresaHeader?: number,
-  ) {
-    let whereBase;
+  // async listar(
+  //   filtros: { familia?: string; nome?: string },
+  //   user: any,
+  //   empresaHeader?: number,
+  // ) {
+  //   let whereBase;
 
+  //   if (user.role === "SUPERUSER") {
+  //     whereBase = empresaHeader ? { empresaId: empresaHeader } : {};
+  //   } else {
+  //     whereBase = { empresaId: user.empresaId };
+  //   }
+
+  //   return this.prisma.produto.findMany({
+  //     where: {
+  //       ...whereBase,
+
+  //       ...(filtros.nome && {
+  //         title: {
+  //           contains: filtros.nome,
+  //           mode: "insensitive",
+  //         },
+  //       }),
+
+  //       ...(filtros.familia && {
+  //         categoria: {
+  //           familia: {
+  //             id: Number(filtros.familia),
+  //           },
+  //         },
+  //       }),
+  //     },
+
+  //     include: {
+  //       categoria: {
+  //         include: {
+  //           familia: true,
+  //         },
+  //       },
+  //     },
+
+  //     orderBy: {
+  //       createdAt: "desc",
+  //     },
+  //   });
+  // }
+
+  async listar(filtros: any, user: any, empresaHeader?: number) {
+    let empresaId;
+
+    // 🔥 REGRA FINAL
     if (user.role === "SUPERUSER") {
-      whereBase = empresaHeader ? { empresaId: empresaHeader } : {};
+      empresaId = empresaHeader || null;
     } else {
-      whereBase = { empresaId: user.empresaId };
+      empresaId = user.empresaId;
     }
+
+    // 🔥 PROTEÇÃO
+    const whereBase = empresaId ? { empresaId } : {};
 
     return this.prisma.produto.findMany({
       where: {
@@ -101,26 +148,6 @@ export class ProdutosService {
             mode: "insensitive",
           },
         }),
-
-        ...(filtros.familia && {
-          categoria: {
-            familia: {
-              id: Number(filtros.familia),
-            },
-          },
-        }),
-      },
-
-      include: {
-        categoria: {
-          include: {
-            familia: true,
-          },
-        },
-      },
-
-      orderBy: {
-        createdAt: "desc",
       },
     });
   }

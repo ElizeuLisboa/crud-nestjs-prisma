@@ -80,6 +80,7 @@ export class ProdutosController {
   @Get()
   async listar(@Query() filtros: any, @Req() req: any) {
     const empresaHeader = req.headers["x-empresa-id"];
+    console.log("HEADER EMPRESA:", empresaHeader);
     return this.produtosService.listar(filtros, req.user);
   }
 
