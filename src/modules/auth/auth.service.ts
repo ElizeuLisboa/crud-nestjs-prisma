@@ -18,37 +18,78 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  // async loginUnificado(dto: LoginUnificadoDto) {
+  //   const { login, password } = dto;
+
+  //   // 🔎 1. BUSCAR CLIENTE
+  //   const cliente = await this.prisma.cliente.findFirst({
+  //     where: {
+  //       OR: [{ email: login }, { telefone: login }, { nome: login }],
+  //     },
+  //   });
+
+  //   if (cliente) {
+  //     // 🔐 validar senha (ajuste conforme seu hash)
+  //     const senhaValida = await bcrypt.compare(password, cliente.password);
+
+  //     if (!senhaValida) {
+  //       throw new UnauthorizedException("Senha inválida");
+  //     }
+
+  //     const token = this.jwtService.sign({
+  //       sub: cliente.id,
+  //       tipo: "cliente",
+  //     });
+
+  //     return {
+  //       token,
+  //       user: cliente,
+  //       tipo: "cliente",
+  //     };
+  //   }
+
+  //   // 🔎 2. BUSCAR USUARIO
+  //   const usuario = await this.prisma.usuario.findFirst({
+  //     where: {
+  //       OR: [{ email: login }, { nome: login }],
+  //     },
+  //   });
+
+  //   if (usuario) {
+  //     const senhaValida = await bcrypt.compare(password, usuario.password);
+
+  //     if (!senhaValida) {
+  //       throw new UnauthorizedException("Senha inválida");
+  //     }
+
+  //     const token = this.jwtService.sign({
+  //       sub: usuario.id,
+  //       role: usuario.role,
+  //       empresaId: usuario.empresaId,
+  //       tipo: "usuario",
+  //     });
+
+  //     return {
+  //       token,
+  //       user: {
+  //         id: usuario.id,
+  //         nome: usuario.nome,
+  //         email: usuario.email,
+  //         role: usuario.role,
+  //         empresaId: usuario.empresaId,
+  //       },
+  //       tipo: "usuario",
+  //     };
+  //   }
+
+  //   // ❌ NÃO ACHOU NADA
+  //   throw new UnauthorizedException("Credenciais inválidas");
+  // }
+
   async loginUnificado(dto: LoginUnificadoDto) {
     const { login, password } = dto;
-    
-    // 🔎 1. BUSCAR CLIENTE
-    const cliente = await this.prisma.cliente.findFirst({
-      where: {
-        OR: [{ email: login }, { telefone: login }, { nome: login }],
-      },
-    });
 
-    if (cliente) {
-      // 🔐 validar senha (ajuste conforme seu hash)
-      const senhaValida = await bcrypt.compare(password, cliente.password);
-
-      if (!senhaValida) {
-        throw new UnauthorizedException("Senha inválida");
-      }
-
-      const token = this.jwtService.sign({
-        sub: cliente.id,
-        tipo: "cliente",
-      });
-
-      return {
-        token,
-        user: cliente,
-        tipo: "cliente",
-      };
-    }
-
-    // 🔎 2. BUSCAR USUARIO
+    // 🔥 1. BUSCAR USUARIO PRIMEIRO (PRIORIDADE)
     const usuario = await this.prisma.usuario.findFirst({
       where: {
         OR: [{ email: login }, { nome: login }],
@@ -82,7 +123,32 @@ export class AuthService {
       };
     }
 
-    // ❌ NÃO ACHOU NADA
+    // 🔥 2. BUSCAR CLIENTE (SÓ SE NÃO FOR USUARIO)
+    const cliente = await this.prisma.cliente.findFirst({
+      where: {
+        OR: [{ email: login }, { telefone: login }, { nome: login }],
+      },
+    });
+
+    if (cliente) {
+      const senhaValida = await bcrypt.compare(password, cliente.password);
+
+      if (!senhaValida) {
+        throw new UnauthorizedException("Senha inválida");
+      }
+
+      const token = this.jwtService.sign({
+        sub: cliente.id,
+        tipo: "cliente",
+      });
+
+      return {
+        token,
+        user: cliente,
+        tipo: "cliente",
+      };
+    }
+
     throw new UnauthorizedException("Credenciais inválidas");
   }
 
