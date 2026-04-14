@@ -20,7 +20,7 @@ export class AuthService {
 
   async loginUnificado(dto: LoginUnificadoDto) {
     const { login, password } = dto;
-
+    
     // 🔎 1. BUSCAR CLIENTE
     const cliente = await this.prisma.cliente.findFirst({
       where: {
@@ -129,7 +129,7 @@ export class AuthService {
       cidade: cliente.cidade,
       estado: cliente.estado,
     };
-
+    console.log("?? PAYLOAD JWT RECEBIDO:", payload);
     const jwt = await this.jwtService.signAsync(payload, { expiresIn: "4d" });
 
     return {
