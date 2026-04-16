@@ -16,14 +16,6 @@ async function bootstrap() {
     }),
   );
 
-  app.enableCors({
-    origin: [
-      "http://localhost:3000",
-      "https://pdv-frontend-1xyf.onrender.com",
-    ],
-    credentials: true,
-  });
-
   app.use(cookieParser());
 
   app.useGlobalPipes(
@@ -33,9 +25,18 @@ async function bootstrap() {
     }),
   );
 
-  const port = process.env.PORT || 4000;
-  console.log(`Servidor rodando na porta ${port}`);
-  await app.listen(port);
+    app.enableCors({
+    origin: [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "https://www.usealtara.com.br",
+    ],
+    credentials: true,
+  });
+
+  // const port = process.env.PORT || 4000;
+  // console.log(`Servidor rodando na porta ${port}`);
+  await app.listen(4000);
 }
 
 bootstrap();
