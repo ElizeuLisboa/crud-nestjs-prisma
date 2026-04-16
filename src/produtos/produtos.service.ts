@@ -7,6 +7,8 @@ import { PrismaService } from "../prisma/prisma.service";
 import { Prisma } from "@prisma/client";
 import cloudinary from "../cloudinary/cloudinary.config";
 import { Readable } from "stream";
+import { CreateProdutoDto } from "./dto/create-produto.dto";
+import { ProdutoUnidadeDto } from "./dto/create-produto.dto";
 
 export type CreateProdutoDTO = {
   title: string;
@@ -23,7 +25,7 @@ export type CreateProdutoDTO = {
 export class ProdutosService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: CreateProdutoDTO, user?: any) {
+  async create(data: CreateProdutoDto, user?: any) {
     return this.prisma.produto.create({
       data: {
         title: data.title,
@@ -35,15 +37,32 @@ export class ProdutosService {
         cloudinaryId: null,
         codigoBarras: data.codigoBarras,
 
-        categoria: {
-          connect: {
-            id: data.categoriaId,
-          },
-        },
+        categoria: data.categoriaId
+          ? {
+              connect: {
+                id: data.categoriaId,
+              },
+            }
+          : undefined,
 
         empresa: {
-          connect: { id: user.empresaId }, // ✅ CORRETO
+          connect: { id: user.empresaId },
         },
+
+        // 🔥 AQUI ENTRA O NOVO
+        unidades: data.unidades
+          ? {
+              create: data.unidades.map((u: ProdutoUnidadeDto) => ({
+                tipo: u.tipo,
+                fator: u.fator,
+                preco: u.preco,
+              })),
+            }
+          : undefined,
+      },
+
+      include: {
+        unidades: true,
       },
     });
   }
@@ -78,59 +97,12 @@ export class ProdutosService {
     });
   }
 
-  // async listar(
-  //   filtros: { familia?: string; nome?: string },
-  //   user: any,
-  //   empresaHeader?: number,
-  // ) {
-  //   let whereBase;
-
-  //   if (user.role === "SUPERUSER") {
-  //     whereBase = empresaHeader ? { empresaId: empresaHeader } : {};
-  //   } else {
-  //     whereBase = { empresaId: user.empresaId };
-  //   }
-
-  //   return this.prisma.produto.findMany({
-  //     where: {
-  //       ...whereBase,
-
-  //       ...(filtros.nome && {
-  //         title: {
-  //           contains: filtros.nome,
-  //           mode: "insensitive",
-  //         },
-  //       }),
-
-  //       ...(filtros.familia && {
-  //         categoria: {
-  //           familia: {
-  //             id: Number(filtros.familia),
-  //           },
-  //         },
-  //       }),
-  //     },
-
-  //     include: {
-  //       categoria: {
-  //         include: {
-  //           familia: true,
-  //         },
-  //       },
-  //     },
-
-  //     orderBy: {
-  //       createdAt: "desc",
-  //     },
-  //   });
-  // }
-
   async listar(filtros: any, user: any, empresaHeader?: number) {
     let empresaId;
 
     // 🔥 REGRA FINAL
     if (user.role === "SUPERUSER") {
-      empresaId = empresaHeader || null;
+      empresaId = empresaHeader ?? user.empresaId;
     } else {
       empresaId = user.empresaId;
     }

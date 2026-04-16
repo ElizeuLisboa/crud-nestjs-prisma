@@ -1,32 +1,63 @@
-import { IsString, IsNotEmpty, IsNumber, Min, IsOptional } from "class-validator";
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  Min,
+  IsOptional,
+  ValidateNested,
+  IsArray,
+} from "class-validator";
+import { Type } from "class-transformer";
+
+// 🔥 DTO DAS UNIDADES
+export class ProdutoUnidadeDto {
+  @IsString()
+  @IsNotEmpty()
+  tipo!: string; // UN | PC | CX
+
+  @IsNumber()
+  fator!: number;
+
+  @IsNumber()
+  preco!: number;
+}
 
 export class CreateProdutoDto {
   @IsString()
   @IsNotEmpty()
-  title?: string;
+  title!: string;
 
   @IsString()
   @IsNotEmpty()
-  description?: string;
-
-  @IsNumber()
-  @Min(0)
-  price?: number;
-
-  @IsString()
-  @IsNotEmpty()
-  image?: string;
-
-  @IsString()
-  @IsOptional()
-  categoria?: string;
+  description!: string;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
-  estoque?: number;
+  price!: number; // 🔥 manter por enquanto
+
+  @IsString()
+  @IsNotEmpty()
+  image!: string;
+
+  @IsNumber()
+  @IsOptional()
+  categoriaId?: number; 
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  estoque!: number;
 
   @IsString()
   @IsOptional()
   codigoBarras?: string;
+
+  // 🔥 NOVO CAMPO
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProdutoUnidadeDto)
+  @IsOptional()
+  unidades?: ProdutoUnidadeDto[];
 }
+

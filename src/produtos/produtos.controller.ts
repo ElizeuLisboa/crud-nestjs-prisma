@@ -33,26 +33,60 @@ export class ProdutosController {
   @UseGuards(JwtAuthGuard)
   @Roles("ADMIN", "SUPERUSER")
   @UseInterceptors(FileInterceptor("imagem"))
-  async create(@UploadedFile() file: Express.Multer.File, @Body() dto: any) {
+  async create(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: any,
+    @Req() req: any, // 🔥 AQUI
+  ) {
     let fotoUrl = dto.image;
     let cloudinaryId = null;
 
     if (file) {
-      // const result = await this.produtosService.uploadImagem(file);
       const result = await this.produtosService.uploadImagem(file);
 
       fotoUrl = result.fotoUrl;
       cloudinaryId = result.cloudinaryId;
     }
 
-    return this.produtosService.create({
-      ...dto,
-      fotoUrl,
-      cloudinaryId,
-      price: Number(dto.price),
-      estoque: Number(dto.estoque),
-    });
+    return this.produtosService.create(
+      {
+        ...dto,
+        fotoUrl,
+        cloudinaryId,
+        price: 
+           dto.price !== undefined
+           ? Number(dto.price)
+           : dto.unidades?.[0]?.preco || 0,        
+        estoque: Number(dto.estoque),
+      },
+      req.user, // 🔥 AQUI
+    );
   }
+
+  // @Post()
+  // @UseGuards(JwtAuthGuard)
+  // @Roles("ADMIN", "SUPERUSER")
+  // @UseInterceptors(FileInterceptor("imagem"))
+  // async create(@UploadedFile() file: Express.Multer.File, @Body() dto: any) {
+  //   let fotoUrl = dto.image;
+  //   let cloudinaryId = null;
+
+  //   if (file) {
+  //     // const result = await this.produtosService.uploadImagem(file);
+  //     const result = await this.produtosService.uploadImagem(file);
+
+  //     fotoUrl = result.fotoUrl;
+  //     cloudinaryId = result.cloudinaryId;
+  //   }
+
+  //   return this.produtosService.create({
+  //     ...dto,
+  //     fotoUrl,
+  //     cloudinaryId,
+  //     price: Number(dto.price),
+  //     estoque: Number(dto.estoque),
+  //   });
+  // }
 
   @Get("barcode/:codigo")
   findByBarcode(@Param("codigo") codigo: string) {
@@ -76,14 +110,6 @@ export class ProdutosController {
   async listarCategorias() {
     return this.produtosService.listarCategorias();
   }
-
-  // @Get()
-  // async listar(@Query() filtros: any, @Req() req: any) {
-  //   const empresaHeader = req.headers["x-empresa-id"];
-  //   console.log("USER:", req.user);
-  //   console.log("HEADER EMPRESA:", req.headers["x-empresa-id"]);
-  //   return this.produtosService.listar(filtros, req.user);
-  // }
 
   @UseGuards(JwtAuthGuard)
   @Get()

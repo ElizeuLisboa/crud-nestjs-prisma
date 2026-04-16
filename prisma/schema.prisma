@@ -111,6 +111,7 @@ model Produto {
   categoriaId  Int?
   codigoBarras String?            @unique
   empresaId    Int
+  unidades     ProdutoUnidade[]
   cloudinaryId String?
   fotoUrl      String?
   badges       BadgePromocional[]
@@ -119,6 +120,18 @@ model Produto {
   empresa      Empresa            @relation(fields: [empresaId], references: [id])
   variacoes    ProdutoVariacao[]
   promocoes    Promocao[]         @relation("ProdutosPromocao")
+}
+
+model ProdutoUnidade {
+  id          Int      @id @default(autoincrement())
+  produtoId   Int
+  produto     Produto  @relation(fields: [produtoId], references: [id])
+
+  tipo        String   // UN | PC | CX
+  fator       Int      // 1, 10, 100
+  preco       Float
+
+  createdAt   DateTime @default(now())
 }
 
 model ProdutoVariacao {
