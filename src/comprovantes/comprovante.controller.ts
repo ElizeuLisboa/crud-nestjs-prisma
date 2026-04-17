@@ -40,8 +40,6 @@ export class ComprovanteController {
       cloud: process.env.CLOUDINARY_CLOUD_NAME,
       key: process.env.CLOUDINARY_API_KEY,
     });
-    // const fotoUrl = file?.path || "";
-    // const cloudinaryId = "comprovantes/" + file?.filename;
 
     const streamUpload = (file: Express.Multer.File) => {
       return new Promise((resolve, reject) => {

@@ -179,86 +179,76 @@ export class PedidosService {
     });
   }
 
-  async confirmarEntrega(
-    pedidoId: number,
-    nomeRecebedor: string,
-    entregadorNome: string,
-    file: Express.Multer.File,
-    user: any,
-  ) {
-    const pedido = await this.prisma.pedido.findFirst({
-      where: {
-        id: pedidoId,
-        empresaId: user.empresaId, // 🔥 ESSENCIAL
-      },
-    });
+  // async confirmarEntrega(
+  //   pedidoId: number,
+  //   nomeRecebedor: string,
+  //   entregadorNome: string,
+  //   file: Express.Multer.File,
+  //   user: any,
+  // ) {
+  //   const pedido = await this.prisma.pedido.findFirst({
+  //     where: {
+  //       id: pedidoId,
+  //       empresaId: user.empresaId, // 🔥 ESSENCIAL
+  //     },
+  //   });
 
-    if (!pedido) {
-      throw new NotFoundException(`Pedido ${pedidoId} não encontrado`);
-    }
+  //   if (!pedido) {
+  //     throw new NotFoundException(`Pedido ${pedidoId} não encontrado`);
+  //   }
 
-    if (!file) {
-      throw new BadRequestException("Arquivo de comprovante não enviado");
-    }
+  //   if (!file) {
+  //     throw new BadRequestException("Arquivo de comprovante não enviado");
+  //   }
 
-    const result = await this.uploadService.uploadImagem(file);
+  //   const result = await this.uploadService.uploadImagem(file);
 
-    const fotoUrl = result.fotoUrl;
-    const cloudinaryId = result.cloudinaryId;
+  //   const fotoUrl = result.fotoUrl;
+  //   const cloudinaryId = result.cloudinaryId;
 
-    // const fotoUrl = `/uploads/${file.filename}`;
+  //   // const fotoUrl = `/uploads/${file.filename}`;
 
-    const existing = await this.prisma.comprovanteEntrega.findUnique({
-      where: { pedidoId },
-    });
+  //   const existing = await this.prisma.comprovanteEntrega.findUnique({
+  //     where: { pedidoId },
+  //   });
 
-    let comprovante;
+  //   let comprovante;
 
-    if (existing) {
-      comprovante = await this.prisma.comprovanteEntrega.update({
-        where: { pedidoId },
-        data: {
-          nomeRecebedor,
-          entregadorNome,
-          fotoUrl,
-          cloudinaryId,
-        },
-      });
-    } else {
-      comprovante = await this.prisma.comprovanteEntrega.create({
-        data: {
-          pedidoId,
-          empresaId: pedido.empresaId,
-          nomeRecebedor,
-          entregadorNome,
-          fotoUrl,
-          cloudinaryId,
-        },
-      });
-    }
+  //   if (existing) {
+  //     comprovante = await this.prisma.comprovanteEntrega.update({
+  //       where: { pedidoId },
+  //       data: {
+  //         nomeRecebedor,
+  //         entregadorNome,
+  //         fotoUrl,
+  //         cloudinaryId,
+  //       },
+  //     });
+  //   } else {
+  //     comprovante = await this.prisma.comprovanteEntrega.create({
+  //       data: {
+  //         pedidoId,
+  //         empresaId: pedido.empresaId,
+  //         nomeRecebedor,
+  //         entregadorNome,
+  //         fotoUrl,
+  //         cloudinaryId,
+  //       },
+  //     });
+  //   }
 
-    const pedidoAtualizado = await this.prisma.pedido.update({
-      where: { id: pedidoId },
-      data: {
-        status: "ENTREGUE",
-        entregue: true,
-      },
-    });
-
-    return {
-      message: `Pedido #${pedido.numeroPedido} entregue com sucesso`,
-      pedido: pedidoAtualizado,
-      comprovante,
-    };
-  }
-
-  // async uploadComprovante(file: Express.Multer.File) {
-  //   // reutiliza seu uploadCloudinary
-  //   const result = await this.uploadImagem(file);
+  //   const pedidoAtualizado = await this.prisma.pedido.update({
+  //     where: { id: pedidoId },
+  //     data: {
+  //       status: "ENTREGUE",
+  //       entregue: true,
+  //     },
+  //   });
 
   //   return {
-  //     fotoUrl: result.fotoUrl,
-  //     cloudinaryId: result.cloudinaryId,
+  //     message: `Pedido #${pedido.numeroPedido} entregue com sucesso`,
+  //     pedido: pedidoAtualizado,
+  //     comprovante,
   //   };
   // }
 
