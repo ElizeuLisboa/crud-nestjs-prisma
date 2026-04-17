@@ -7,10 +7,14 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { CreatePedidoDto } from "./dto/create-pedido.dto";
 import { Express } from "express";
+import { UploadService } from "../upload/upload.service";
 
 @Injectable()
 export class PedidosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   // 🔢 GERADOR DE NUMERO PDV
   private async gerarNumeroPedido(tx: any) {
@@ -197,7 +201,12 @@ export class PedidosService {
       throw new BadRequestException("Arquivo de comprovante não enviado");
     }
 
-    const fotoUrl = `/uploads/${file.filename}`;
+    const result = await this.uploadService.uploadImagem(file);
+
+    const fotoUrl = result.fotoUrl;
+    const cloudinaryId = result.cloudinaryId;
+
+    // const fotoUrl = `/uploads/${file.filename}`;
 
     const existing = await this.prisma.comprovanteEntrega.findUnique({
       where: { pedidoId },
@@ -212,6 +221,7 @@ export class PedidosService {
           nomeRecebedor,
           entregadorNome,
           fotoUrl,
+          cloudinaryId,
         },
       });
     } else {
@@ -222,6 +232,7 @@ export class PedidosService {
           nomeRecebedor,
           entregadorNome,
           fotoUrl,
+          cloudinaryId,
         },
       });
     }
@@ -240,6 +251,16 @@ export class PedidosService {
       comprovante,
     };
   }
+
+  // async uploadComprovante(file: Express.Multer.File) {
+  //   // reutiliza seu uploadCloudinary
+  //   const result = await this.uploadImagem(file);
+
+  //   return {
+  //     fotoUrl: result.fotoUrl,
+  //     cloudinaryId: result.cloudinaryId,
+  //   };
+  // }
 
   async criarVendaCaixa(data: CreatePedidoDto, user: any) {
     if (!user?.id) {

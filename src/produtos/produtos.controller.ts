@@ -112,12 +112,5 @@ export class ProdutosController {
     );
   }
 
-  // @Get(":id")
-  // findOne(@Param("id", ParseIntPipe) id: string, @Req() req: any) {
-  //   const parsedId = Number(id);
-  //   if (isNaN(parsedId)) {
-  //     throw new BadRequestException("ID inválido");
-  //   }
-  //   return this.produtosService.findOne(parsedId, req.user);
-  // }
+
 }

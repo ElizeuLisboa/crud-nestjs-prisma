@@ -4,9 +4,10 @@ import { PedidosController } from "./pedidos.controller";
 import { PrismaService } from "../prisma/prisma.service";
 import { PagamentosModule } from "../pagamentos/pagamentos.module"; // <-- importante!
 import { AuthModule } from "../modules/auth/auth.module";
-
+import { UploadService } from "../upload/upload.service";
+import { UploadModule } from "../upload/upload.module";
 @Module({
-  imports: [PagamentosModule,AuthModule],//adiciona isso
+  imports: [PagamentosModule,AuthModule, UploadModule],//adiciona isso
   controllers: [PedidosController],
   providers: [PedidosService, PrismaService],
   exports: [PedidosService],
