@@ -23,6 +23,7 @@ import { CreateProdutoDTO, ProdutosService } from "./produtos.service";
 import { JwtAuthGuard } from "../modules/auth/jwt-auth.guard";
 import { Roles } from "../modules/auth/roles.decorator";
 import { PrismaService } from "../prisma/prisma.service";
+import { Public } from "../common/decorators/public.decorator";
 
 @Controller("produtos")
 export class ProdutosController {
@@ -53,40 +54,15 @@ export class ProdutosController {
         ...dto,
         fotoUrl,
         cloudinaryId,
-        price: 
-           dto.price !== undefined
-           ? Number(dto.price)
-           : dto.unidades?.[0]?.preco || 0,        
+        price:
+          dto.price !== undefined
+            ? Number(dto.price)
+            : dto.unidades?.[0]?.preco || 0,
         estoque: Number(dto.estoque),
       },
       req.user, // 🔥 AQUI
     );
   }
-
-  // @Post()
-  // @UseGuards(JwtAuthGuard)
-  // @Roles("ADMIN", "SUPERUSER")
-  // @UseInterceptors(FileInterceptor("imagem"))
-  // async create(@UploadedFile() file: Express.Multer.File, @Body() dto: any) {
-  //   let fotoUrl = dto.image;
-  //   let cloudinaryId = null;
-
-  //   if (file) {
-  //     // const result = await this.produtosService.uploadImagem(file);
-  //     const result = await this.produtosService.uploadImagem(file);
-
-  //     fotoUrl = result.fotoUrl;
-  //     cloudinaryId = result.cloudinaryId;
-  //   }
-
-  //   return this.produtosService.create({
-  //     ...dto,
-  //     fotoUrl,
-  //     cloudinaryId,
-  //     price: Number(dto.price),
-  //     estoque: Number(dto.estoque),
-  //   });
-  // }
 
   @Get("barcode/:codigo")
   findByBarcode(@Param("codigo") codigo: string) {
@@ -111,13 +87,11 @@ export class ProdutosController {
     return this.produtosService.listarCategorias();
   }
 
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
+  @Public()
   @Get()
   listar(@Query() filtros: any, @Req() req: any) {
     const empresaHeader = req.headers["x-empresa-id"];
-
-    console.log("USER:", req.user); // 🔥 DEBUG
-    console.log("HEADER EMPRESA:", empresaHeader);
 
     return this.produtosService.listar(
       filtros,
@@ -126,12 +100,24 @@ export class ProdutosController {
     );
   }
 
+  @Public()
   @Get(":id")
-  findOne(@Param("id", ParseIntPipe) id: string, @Req() req: any) {
-    const parsedId = Number(id);
-    if (isNaN(parsedId)) {
-      throw new BadRequestException("ID inválido");
-    }
-    return this.produtosService.findOne(parsedId, req.user);
+  findOne(@Param("id") id: string, @Req() req: any) {
+    const empresaHeader = req.headers["x-empresa-id"];
+
+    return this.produtosService.findOne(
+      Number(id),
+      req.user,
+      empresaHeader ? Number(empresaHeader) : undefined,
+    );
   }
+
+  // @Get(":id")
+  // findOne(@Param("id", ParseIntPipe) id: string, @Req() req: any) {
+  //   const parsedId = Number(id);
+  //   if (isNaN(parsedId)) {
+  //     throw new BadRequestException("ID inválido");
+  //   }
+  //   return this.produtosService.findOne(parsedId, req.user);
+  // }
 }

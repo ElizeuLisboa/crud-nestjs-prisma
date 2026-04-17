@@ -101,12 +101,14 @@ export class ProdutosService {
     let empresaId;
 
     // 🔥 REGRA FINAL
-    if (user.role === "SUPERUSER") {
+    if (user?.role === "SUPERUSER") {
       empresaId = empresaHeader ?? user.empresaId;
-    } else {
+    } else if (user) {
       empresaId = user.empresaId;
+    } else {
+      // 🔥 VISITANTE
+      empresaId = empresaHeader || 1; // ou empresa padrão
     }
-
     // 🔥 PROTEÇÃO
     const whereBase = empresaId ? { empresaId } : {};
 
@@ -197,33 +199,56 @@ export class ProdutosService {
     });
   }
 
-  async findOne(id: number, user: any) {
-    const produto = await this.prisma.produto.findFirst({
-      where: {
-        id,
-        empresaId: user.empresaId, // ✅ SEGURANÇA
-      },
-      include: {
-        categoria: {
-          select: {
-            id: true,
-            nome: true,
-            familia: {
-              select: {
-                id: true,
-                nome: true,
-              },
-            },
-          },
-        },
-      },
-    });
+  // async findOne(id: number, user: any) {
+  //   const produto = await this.prisma.produto.findFirst({
+  //     where: {
+  //       id,
+  //       empresaId: user.empresaId, // ✅ SEGURANÇA
+  //     },
+  //     include: {
+  //       categoria: {
+  //         select: {
+  //           id: true,
+  //           nome: true,
+  //           familia: {
+  //             select: {
+  //               id: true,
+  //               nome: true,
+  //             },
+  //           },
+  //         },
+  //       },
+  //     },
+  //   });
 
-    if (!produto) {
-      throw new NotFoundException("Produto não encontrado");
+  //   if (!produto) {
+  //     throw new NotFoundException("Produto não encontrado");
+  //   }
+
+  //   return produto;
+  // }
+
+  async findOne(id: number, user?: any, empresaHeader?: number) {
+    let empresaId;
+
+    if (user?.role === "SUPERUSER") {
+      empresaId = empresaHeader ?? user.empresaId;
+    } else if (user) {
+      empresaId = user.empresaId;
+    } else {
+      // 🔥 visitante
+      empresaId = empresaHeader || 1;
     }
 
-    return produto;
+    return this.prisma.produto.findFirst({
+      where: {
+        id,
+        ...(empresaId && { empresaId }),
+      },
+      include: {
+        unidades: true,
+      },
+    });
   }
 
   async buscarProdutos(query: string, user: any) {
