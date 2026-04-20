@@ -40,6 +40,16 @@ export class CreateProdutoDto {
   @IsNotEmpty()
   image!: string;
 
+    // 🔥 NOVO
+  @IsString()
+  @IsOptional()
+  imagemUrl?: string;
+
+  // 🔥 NOVO
+  @IsString()
+  @IsOptional()
+  fotoUrl?: string;
+
   @IsNumber()
   @IsOptional()
   categoriaId?: number; 

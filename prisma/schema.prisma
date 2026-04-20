@@ -201,6 +201,8 @@ model ItemPedido {
   descricao     String?
   valorUnitario Float?
   empresaId     Int
+  fator         Int?
+  unidade       String?
   empresa       Empresa @relation(fields: [empresaId], references: [id])
   pedido        Pedido  @relation(fields: [pedidoId], references: [id])
   produto       Produto @relation(fields: [produtoId], references: [id])

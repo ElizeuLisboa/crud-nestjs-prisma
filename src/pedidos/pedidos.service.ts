@@ -115,6 +115,8 @@ export class PedidosService {
                   produtoId: item.produtoId,
                   quantidade: item.quantidade,
                   valor: valorUnitario,
+                  fator: item.fator ?? 1,
+                  unidade: item.unidade ?? "UN",
                 };
               }),
             },
@@ -127,6 +129,33 @@ export class PedidosService {
         });
 
         console.log("✅ PEDIDO CRIADO:", pedido);
+
+        for (const item of data.itens) {
+          const produto = produtosMap.get(item.produtoId);
+
+          if (!produto) continue;
+
+          // 🔥 fator da unidade escolhida
+          const fator = Number(item.fator || 1);
+
+          // 🔥 baixa real no estoque
+          const quantidadeBaixa = Number(item.quantidade) * fator;
+
+          await tx.produto.update({
+            where: {
+              id: item.produtoId,
+            },
+            data: {
+              estoque: {
+                decrement: quantidadeBaixa,
+              },
+            },
+          });
+
+          console.log(
+            `📦 Estoque baixado → Produto ${item.produtoId}: -${quantidadeBaixa}`,
+          );
+        }
 
         return pedido;
       });
@@ -178,79 +207,6 @@ export class PedidosService {
       orderBy: { createdAt: "desc" },
     });
   }
-
-  // async confirmarEntrega(
-  //   pedidoId: number,
-  //   nomeRecebedor: string,
-  //   entregadorNome: string,
-  //   file: Express.Multer.File,
-  //   user: any,
-  // ) {
-  //   const pedido = await this.prisma.pedido.findFirst({
-  //     where: {
-  //       id: pedidoId,
-  //       empresaId: user.empresaId, // 🔥 ESSENCIAL
-  //     },
-  //   });
-
-  //   if (!pedido) {
-  //     throw new NotFoundException(`Pedido ${pedidoId} não encontrado`);
-  //   }
-
-  //   if (!file) {
-  //     throw new BadRequestException("Arquivo de comprovante não enviado");
-  //   }
-
-  //   const result = await this.uploadService.uploadImagem(file);
-
-  //   const fotoUrl = result.fotoUrl;
-  //   const cloudinaryId = result.cloudinaryId;
-
-  //   // const fotoUrl = `/uploads/${file.filename}`;
-
-  //   const existing = await this.prisma.comprovanteEntrega.findUnique({
-  //     where: { pedidoId },
-  //   });
-
-  //   let comprovante;
-
-  //   if (existing) {
-  //     comprovante = await this.prisma.comprovanteEntrega.update({
-  //       where: { pedidoId },
-  //       data: {
-  //         nomeRecebedor,
-  //         entregadorNome,
-  //         fotoUrl,
-  //         cloudinaryId,
-  //       },
-  //     });
-  //   } else {
-  //     comprovante = await this.prisma.comprovanteEntrega.create({
-  //       data: {
-  //         pedidoId,
-  //         empresaId: pedido.empresaId,
-  //         nomeRecebedor,
-  //         entregadorNome,
-  //         fotoUrl,
-  //         cloudinaryId,
-  //       },
-  //     });
-  //   }
-
-  //   const pedidoAtualizado = await this.prisma.pedido.update({
-  //     where: { id: pedidoId },
-  //     data: {
-  //       status: "ENTREGUE",
-  //       entregue: true,
-  //     },
-  //   });
-
-  //   return {
-  //     message: `Pedido #${pedido.numeroPedido} entregue com sucesso`,
-  //     pedido: pedidoAtualizado,
-  //     comprovante,
-  //   };
-  // }
 
   async criarVendaCaixa(data: CreatePedidoDto, user: any) {
     if (!user?.id) {

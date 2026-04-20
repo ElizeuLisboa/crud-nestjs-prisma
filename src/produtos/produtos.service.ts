@@ -32,8 +32,11 @@ export class ProdutosService {
         description: data.description,
         price: data.price,
         estoque: data.estoque,
-        image: data.image,
-        fotoUrl: data.image,
+        image: data.fotoUrl || data.imagemUrl || "",
+        fotoUrl: data.fotoUrl || data.imagemUrl || "",
+
+        // image: data.image,
+        // fotoUrl: data.image,
         cloudinaryId: null,
         codigoBarras: data.codigoBarras,
 
@@ -198,35 +201,6 @@ export class ProdutosService {
       },
     });
   }
-
-  // async findOne(id: number, user: any) {
-  //   const produto = await this.prisma.produto.findFirst({
-  //     where: {
-  //       id,
-  //       empresaId: user.empresaId, // ✅ SEGURANÇA
-  //     },
-  //     include: {
-  //       categoria: {
-  //         select: {
-  //           id: true,
-  //           nome: true,
-  //           familia: {
-  //             select: {
-  //               id: true,
-  //               nome: true,
-  //             },
-  //           },
-  //         },
-  //       },
-  //     },
-  //   });
-
-  //   if (!produto) {
-  //     throw new NotFoundException("Produto não encontrado");
-  //   }
-
-  //   return produto;
-  // }
 
   async findOne(id: number, user?: any, empresaHeader?: number) {
     let empresaId;

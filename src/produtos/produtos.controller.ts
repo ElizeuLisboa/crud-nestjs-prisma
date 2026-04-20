@@ -30,6 +30,44 @@ export class ProdutosController {
   private readonly prisma: PrismaService = new PrismaService();
   constructor(private readonly produtosService: ProdutosService) {}
 
+  // @Post()
+  // @UseGuards(JwtAuthGuard)
+  // @Roles("ADMIN", "SUPERUSER")
+  // @UseInterceptors(FileInterceptor("imagem"))
+  // async create(
+  //   @UploadedFile() file: Express.Multer.File,
+  //   @Body() dto: any,
+  //   @Req() req: any, // 🔥 AQUI
+  // ) {
+  //   let fotoUrl = dto.image;
+  //   let cloudinaryId = null;
+
+  //   if (file) {
+  //     const result = await this.produtosService.uploadImagem(file);
+
+  //     fotoUrl = result.fotoUrl;
+  //     cloudinaryId = result.cloudinaryId;
+  //   }
+
+  //   if (dto.unidades && typeof dto.unidades === "string") {
+  //     dto.unidades = JSON.parse(dto.unidades);
+  //   }
+
+  //   return this.produtosService.create(
+  //     {
+  //       ...dto,
+  //       fotoUrl,
+  //       cloudinaryId,
+  //       price:
+  //         dto.price !== undefined
+  //           ? Number(dto.price)
+  //           : dto.unidades?.[0]?.preco || 0,
+  //       estoque: Number(dto.estoque),
+  //     },
+  //     req.user, // 🔥 AQUI
+  //   );
+  // }
+
   @Post()
   @UseGuards(JwtAuthGuard)
   @Roles("ADMIN", "SUPERUSER")
@@ -37,14 +75,17 @@ export class ProdutosController {
   async create(
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: any,
-    @Req() req: any, // 🔥 AQUI
+    @Req() req: any,
   ) {
-    let fotoUrl = dto.image;
+    if (dto.unidades && typeof dto.unidades === "string") {
+      dto.unidades = JSON.parse(dto.unidades);
+    }
+
+    let fotoUrl = dto.imagemUrl || null;
     let cloudinaryId = null;
 
     if (file) {
       const result = await this.produtosService.uploadImagem(file);
-
       fotoUrl = result.fotoUrl;
       cloudinaryId = result.cloudinaryId;
     }
@@ -54,13 +95,10 @@ export class ProdutosController {
         ...dto,
         fotoUrl,
         cloudinaryId,
-        price:
-          dto.price !== undefined
-            ? Number(dto.price)
-            : dto.unidades?.[0]?.preco || 0,
+        price: Number(dto.price),
         estoque: Number(dto.estoque),
       },
-      req.user, // 🔥 AQUI
+      req.user,
     );
   }
 
@@ -111,6 +149,4 @@ export class ProdutosController {
       empresaHeader ? Number(empresaHeader) : undefined,
     );
   }
-
-
 }

@@ -52,23 +52,7 @@ export class PedidosController {
   }
 
   // 📷 Upload comprovante de entrega
-  // @UseGuards(JwtAuthGuard)
-  // @Post(":id/comprovante")
-  // @UseInterceptors(FileInterceptor("file"))
-  // enviarComprovante(
-  //   @Param("id", ParseIntPipe) id: number,
-  //   @UploadedFile() file: Express.Multer.File,
-  //   @Body() body: { nomeRecebedor: string; entregadorNome: string },
-  //   @Req() req: Request, // 🔥 TIPADO CORRETAMENTE
-  // ) {
-  //   return this.pedidosService.confirmarEntrega(
-  //     id,
-  //     body.nomeRecebedor,
-  //     body.entregadorNome,
-  //     file,
-  //     req.user,
-  //   );
-  // }
+  
 
   // 🧾 Venda direta no caixa (PDV)
   @UseGuards(JwtAuthGuard)
