@@ -64,19 +64,6 @@ export class ProdutosController {
     );
   }
 
-  @Get("barcode/:codigo")
-  findByBarcode(@Param("codigo") codigo: string) {
-    return this.produtosService.findByBarcode(codigo);
-  }
-
-  @Get("buscar")
-  buscarProdutos(@Query("q") termo: string, @Req() req: any) {
-    if (!termo?.trim()) {
-      throw new BadRequestException("Nenhum termo informado");
-    }
-    return this.produtosService.buscarProdutos(termo, req.user);
-  }
-
   @Get("familias")
   async listarFamilias() {
     return this.produtosService.listarFamilias();
@@ -92,10 +79,18 @@ export class ProdutosController {
     return this.produtosService.listarCategorias(grupoId);
   }
 
-  // @Get("categorias/:grupoId")
-  // async listarCategorias() {
-  //   return this.produtosService.listarCategorias();
-  // }
+  @Get("buscar")
+  buscarProdutos(@Query("q") termo: string, @Req() req: any) {
+    if (!termo?.trim()) {
+      throw new BadRequestException("Nenhum termo informado");
+    }
+    return this.produtosService.buscarProdutos(termo, req.user);
+  }
+
+  @Get("barcode/:codigo")
+  findByBarcode(@Param("codigo") codigo: string) {
+    return this.produtosService.findByBarcode(codigo);
+  }
 
   // @UseGuards(JwtAuthGuard)
   @Public()
@@ -108,6 +103,13 @@ export class ProdutosController {
       req.user,
       empresaHeader ? Number(empresaHeader) : undefined,
     );
+  }
+
+  @Get("teste-rota")
+  testeRota() {
+    return {
+      message: "rota nova funcionando",
+    };
   }
 
   @Public()
