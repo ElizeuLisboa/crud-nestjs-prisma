@@ -30,44 +30,6 @@ export class ProdutosController {
   private readonly prisma: PrismaService = new PrismaService();
   constructor(private readonly produtosService: ProdutosService) {}
 
-  // @Post()
-  // @UseGuards(JwtAuthGuard)
-  // @Roles("ADMIN", "SUPERUSER")
-  // @UseInterceptors(FileInterceptor("imagem"))
-  // async create(
-  //   @UploadedFile() file: Express.Multer.File,
-  //   @Body() dto: any,
-  //   @Req() req: any, // 🔥 AQUI
-  // ) {
-  //   let fotoUrl = dto.image;
-  //   let cloudinaryId = null;
-
-  //   if (file) {
-  //     const result = await this.produtosService.uploadImagem(file);
-
-  //     fotoUrl = result.fotoUrl;
-  //     cloudinaryId = result.cloudinaryId;
-  //   }
-
-  //   if (dto.unidades && typeof dto.unidades === "string") {
-  //     dto.unidades = JSON.parse(dto.unidades);
-  //   }
-
-  //   return this.produtosService.create(
-  //     {
-  //       ...dto,
-  //       fotoUrl,
-  //       cloudinaryId,
-  //       price:
-  //         dto.price !== undefined
-  //           ? Number(dto.price)
-  //           : dto.unidades?.[0]?.preco || 0,
-  //       estoque: Number(dto.estoque),
-  //     },
-  //     req.user, // 🔥 AQUI
-  //   );
-  // }
-
   @Post()
   @UseGuards(JwtAuthGuard)
   @Roles("ADMIN", "SUPERUSER")
@@ -120,10 +82,20 @@ export class ProdutosController {
     return this.produtosService.listarFamilias();
   }
 
-  @Get("categorias")
-  async listarCategorias() {
-    return this.produtosService.listarCategorias();
+  @Get("grupos/:familiaId")
+  async listarGrupos(@Param("familiaId", ParseIntPipe) familiaId: number) {
+    return this.produtosService.listarGrupos(familiaId);
   }
+
+  @Get("categorias/:grupoId")
+  async listarCategorias(@Param("grupoId", ParseIntPipe) grupoId: number) {
+    return this.produtosService.listarCategorias(grupoId);
+  }
+
+  // @Get("categorias/:grupoId")
+  // async listarCategorias() {
+  //   return this.produtosService.listarCategorias();
+  // }
 
   // @UseGuards(JwtAuthGuard)
   @Public()

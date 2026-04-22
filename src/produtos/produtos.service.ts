@@ -129,21 +129,43 @@ export class ProdutosService {
     });
   }
 
-  async listarCategorias() {
-    return this.prisma.categoriaProduto.findMany({
-      select: {
-        id: true,
-        nome: true,
-        familia: {
-          select: {
-            id: true,
-            nome: true,
-          },
-        },
+  async listarGrupos(familiaId: number) {
+    return this.prisma.grupoProduto.findMany({
+      where: {
+        familiaId,
       },
-      orderBy: { nome: "asc" },
+      orderBy: {
+        nome: "asc",
+      },
     });
   }
+
+  async listarCategorias(grupoId: number) {
+    return this.prisma.categoriaProduto.findMany({
+      where: {
+        grupoId,
+      },
+      orderBy: {
+        nome: "asc",
+      },
+    });
+  }
+
+  // async listarCategorias( grupoId ) {
+  //   return this.prisma.categoriaProduto.findMany({
+  //     select: {
+  //       id: true,
+  //       nome: true,
+  //       familia: {
+  //         select: {
+  //           id: true,
+  //           nome: true,
+  //         },
+  //       },
+  //     },
+  //     orderBy: { nome: "asc" },
+  //   });
+  // }
 
   async listarFamilias() {
     return this.prisma.familiaProduto.findMany({

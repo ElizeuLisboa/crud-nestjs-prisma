@@ -8,16 +8,18 @@ datasource db {
 }
 
 model Empresa {
-  id              Int                  @id @default(autoincrement())
-  nome            String
-  cnpj            String
-  endereco        String
-  telefone        String
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  ativa           Boolean              @default(true)
+  id        Int      @id @default(autoincrement())
+  nome      String
+  cnpj      String
+  endereco  String
+  telefone  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ativa     Boolean  @default(true)
+
   auditorias      AuditoriaAcao[]
   categorias      CategoriaProduto[]
+  grupos          GrupoProduto[] // 🔥 NOVO
   clientes        Cliente[]
   comprovantes    ComprovanteEntrega[]
   fretes          Frete[]
@@ -82,20 +84,43 @@ model AuditoriaAcao {
 }
 
 model FamiliaProduto {
-  id         Int                @id @default(autoincrement())
-  nome       String             @unique
+  id   Int    @id @default(autoincrement())
+  nome String @unique
+
+  categorias CategoriaProduto[] // 🔥 manter temporariamente
+  grupos     GrupoProduto[] // 🔥 novo
+}
+
+model GrupoProduto {
+  id   Int    @id @default(autoincrement())
+  nome String
+
+  familiaId Int
+  empresaId Int
+
+  familia FamiliaProduto @relation(fields: [familiaId], references: [id])
+  empresa Empresa        @relation(fields: [empresaId], references: [id])
+
   categorias CategoriaProduto[]
+
+  @@unique([nome, familiaId, empresaId])
 }
 
 model CategoriaProduto {
-  id        Int                @id @default(autoincrement())
-  nome      String
-  familiaId Int
+  id   Int    @id @default(autoincrement())
+  nome String
+
+  familiaId Int // 🔥 manter por enquanto
+  grupoId   Int? // 🔥 novo e opcional
   empresaId Int
-  badges    BadgePromocional[]
-  empresa   Empresa            @relation(fields: [empresaId], references: [id])
-  familia   FamiliaProduto     @relation(fields: [familiaId], references: [id])
-  produtos  Produto[]
+
+  badges  BadgePromocional[]
+  empresa Empresa            @relation(fields: [empresaId], references: [id])
+
+  familia FamiliaProduto @relation(fields: [familiaId], references: [id])
+  grupo   GrupoProduto?  @relation(fields: [grupoId], references: [id])
+
+  produtos Produto[]
 
   @@unique([nome, familiaId, empresaId])
 }
@@ -123,15 +148,15 @@ model Produto {
 }
 
 model ProdutoUnidade {
-  id          Int      @id @default(autoincrement())
-  produtoId   Int
-  produto     Produto  @relation(fields: [produtoId], references: [id])
+  id        Int     @id @default(autoincrement())
+  produtoId Int
+  produto   Produto @relation(fields: [produtoId], references: [id])
 
-  tipo        String   // UN | PC | CX
-  fator       Int      // 1, 10, 100
-  preco       Float
+  tipo  String // UN | PC | CX
+  fator Int // 1, 10, 100
+  preco Float
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 model ProdutoVariacao {
