@@ -74,6 +74,11 @@ export class ProdutosController {
     return this.produtosService.listarGrupos(familiaId);
   }
 
+  @Get("categorias")
+  async listarCategoriasTodas() {
+    return this.produtosService.listarCategoriasTodas();
+  }
+
   @Get("categorias/:grupoId")
   async listarCategorias(@Param("grupoId", ParseIntPipe) grupoId: number) {
     return this.produtosService.listarCategorias(grupoId);
@@ -114,11 +119,11 @@ export class ProdutosController {
 
   @Public()
   @Get(":id")
-  findOne(@Param("id") id: string, @Req() req: any) {
+  findOne(@Param("id", ParseIntPipe) id: number, @Req() req: any) {
     const empresaHeader = req.headers["x-empresa-id"];
 
     return this.produtosService.findOne(
-      Number(id),
+      id,
       req.user,
       empresaHeader ? Number(empresaHeader) : undefined,
     );

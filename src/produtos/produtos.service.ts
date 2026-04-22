@@ -151,6 +151,14 @@ export class ProdutosService {
     });
   }
 
+  async listarCategoriasTodas() {
+    return this.prisma.categoriaProduto.findMany({
+      orderBy: {
+        nome: "asc",
+      },
+    });
+  }
+
   // async listarCategorias( grupoId ) {
   //   return this.prisma.categoriaProduto.findMany({
   //     select: {
@@ -225,6 +233,10 @@ export class ProdutosService {
   }
 
   async findOne(id: number, user?: any, empresaHeader?: number) {
+    if (!id || isNaN(Number(id))) {
+      throw new BadRequestException("ID inválido");
+    }
+
     let empresaId;
 
     if (user?.role === "SUPERUSER") {
@@ -232,7 +244,6 @@ export class ProdutosService {
     } else if (user) {
       empresaId = user.empresaId;
     } else {
-      // 🔥 visitante
       empresaId = empresaHeader || 1;
     }
 
@@ -246,6 +257,29 @@ export class ProdutosService {
       },
     });
   }
+
+  // async findOne(id: number, user?: any, empresaHeader?: number) {
+  //   let empresaId;
+
+  //   if (user?.role === "SUPERUSER") {
+  //     empresaId = empresaHeader ?? user.empresaId;
+  //   } else if (user) {
+  //     empresaId = user.empresaId;
+  //   } else {
+  //     // 🔥 visitante
+  //     empresaId = empresaHeader || 1;
+  //   }
+
+  //   return this.prisma.produto.findFirst({
+  //     where: {
+  //       id,
+  //       ...(empresaId && { empresaId }),
+  //     },
+  //     include: {
+  //       unidades: true,
+  //     },
+  //   });
+  // }
 
   async buscarProdutos(query: string, user: any) {
     const termo = query?.trim();
