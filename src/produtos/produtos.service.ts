@@ -43,7 +43,7 @@ export class ProdutosService {
         categoria: data.categoriaId
           ? {
               connect: {
-                id: data.categoriaId,
+                id: Number(data.categoriaId),
               },
             }
           : undefined,
