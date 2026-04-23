@@ -63,6 +63,10 @@ export class CreateProdutoDto {
   @IsOptional()
   codigoBarras?: string;
 
+  @IsString()
+  @IsOptional()
+  cloudinaryId?: string;
+
   // 🔥 NOVO CAMPO
   @IsArray()
   @ValidateNested({ each: true })

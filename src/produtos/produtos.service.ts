@@ -37,7 +37,7 @@ export class ProdutosService {
 
         // image: data.image,
         // fotoUrl: data.image,
-        cloudinaryId: null,
+        cloudinaryId: data.cloudinaryId || null,
         codigoBarras: data.codigoBarras,
 
         categoria: data.categoriaId
