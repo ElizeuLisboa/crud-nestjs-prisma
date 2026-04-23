@@ -9,6 +9,7 @@ import { MercadoPagoService } from "./mercadopago/mercadopago.service";
 import { Preference } from "mercadopago";
 import { PagarMercadoPagoDto } from "./dto/pagar-mercadopago.dto";
 import { Prisma } from "@prisma/client";
+import { PEDIDO_STATUS } from "../common/enums/pedido-status.enum";
 
 @Injectable()
 export class PagamentosService {
@@ -20,16 +21,70 @@ export class PagamentosService {
     private readonly mercadoPagoService: MercadoPagoService,
   ) {}
 
+  // 👇 AJUSTE PRINCIPAL PARA O pagamentos.service.ts
+
+  // 1. CRIE ESTA FUNÇÃO DENTRO DO PagamentosService
+
+  async atualizarStatusPedido(
+    pedidoId: number,
+    novoStatus: string,
+    empresaId: number,
+    metodoPagamento?: string,
+  ) {
+    await this.prisma.pedido.update({
+      where: { id: pedidoId },
+      data: {
+        status: novoStatus,
+        ...(metodoPagamento && { metodoPagamento }),
+        updatedAt: new Date(),
+      },
+    });
+
+    await this.prisma.pedidoStatus.create({
+      data: {
+        pedidoId,
+        status: novoStatus,
+        dataStatus: new Date(),
+        empresaId,
+      },
+    });
+
+    console.log(`📦 Pedido ${pedidoId} atualizado para status: ${novoStatus}`);
+  }
+
   async pagarComCartao(dto: PagarMercadoPagoDto) {
     // 🔐 MODO CONTINGÊNCIA TEMPORÁRIO
+    // if (process.env.MODO_PDVMVP === "true") {
+    //   await this.prisma.pedido.update({
+    //     where: { id: dto.pedidoId },
+    //     data: {
+    //       status: PEDIDO_STATUS.PAGO,
+    //       metodoPagamento: "MERCADOPAGO",
+    //     },
+    //   });
+
+    //   return {
+    //     status: "approved",
+    //     id: "SIMULADO",
+    //     transaction_amount: dto.valor,
+    //   };
+    // }
+
     if (process.env.MODO_PDVMVP === "true") {
-      await this.prisma.pedido.update({
+      const pedido = await this.prisma.pedido.findUnique({
         where: { id: dto.pedidoId },
-        data: {
-          status: "PAGO",
-          metodoPagamento: "MERCADOPAGO",
-        },
       });
+
+      if (!pedido || !pedido.empresaId) {
+        throw new BadRequestException("Pedido não encontrado");
+      }
+
+      await this.atualizarStatusPedido(
+        dto.pedidoId as number,
+        PEDIDO_STATUS.PAGO,
+        pedido.empresaId,
+        "MERCADOPAGO",
+      );
 
       return {
         status: "approved",
@@ -72,13 +127,12 @@ export class PagamentosService {
       },
     });
 
-    await this.prisma.pedido.update({
-      where: { id: pedidoId },
-      data: {
-        status: "PAGO",
-        metodoPagamento: "PIX",
-      },
-    });
+    await this.atualizarStatusPedido(
+      pedidoId,
+      PEDIDO_STATUS.PAGO,
+      pedido.empresaId,
+      "PIX",
+    );
 
     const pagamento = await this.mercadoPagoService.criarPagamentoPix({
       valor: pedido.valorTotal,
@@ -203,36 +257,6 @@ export class PagamentosService {
     };
   }
 
-  // async verificarStatusPix(txid: string) {
-  //   const pagamento = await this.prisma.pagamento.findFirst({
-  //     where: {
-  //       pixTxid: txid,
-  //       empresaId: user.empresaId,
-  //     },
-  //   });
-
-  //   if (!pagamento) {
-  //     throw new NotFoundException("Pagamento não encontrado");
-  //   }
-
-  //   console.log("📌 Status atual no banco:", pagamento.status);
-  //   if (pagamento.status !== "PAGO") {
-  //     console.log("⚡ Chamando simularPixPago...");
-  //     await this.simularPixPago(txid);
-  //   }
-
-  //   const Atualizado = await this.prisma.pagamento.findFirst({
-  //     where: { pixTxid: txid },
-  //   });
-
-  //   console.log("✅ Status depois da verificação:", Atualizado?.status);
-  //   return {
-  //     status: Atualizado?.status,
-  //     pedidoId: Atualizado?.pedidoId,
-  //     valor: Atualizado?.valor,
-  //   };
-  // }
-
   async processarWebhookMP(body: any) {
     console.log("📩 WEBHOOK RECEBIDO:", body);
 
@@ -260,17 +284,29 @@ export class PagamentosService {
     }
 
     // 🔥 SE PAGOU
-
     if (pagamentoMP.status === "approved") {
       console.log("✅ PAGAMENTO APROVADO");
 
-      await this.prisma.pedido.update({
+      const pedido = await this.prisma.pedido.findUnique({
         where: { id: pedidoId },
-        data: {
-          status: "PAGO",
-          metodoPagamento: "PIX",
-        },
       });
+
+      if (pedido?.empresaId) {
+        await this.atualizarStatusPedido(
+          pedidoId,
+          PEDIDO_STATUS.PAGO,
+          pedido.empresaId,
+          "PIX",
+        );
+      }
+
+      // await this.prisma.pedido.update({
+      //   where: { id: pedidoId },
+      //   data: {
+      //     status: "PAGO",
+      //     metodoPagamento: "PIX",
+      //   },
+      // });
     }
     return { ok: true };
   }
@@ -299,11 +335,20 @@ export class PagamentosService {
         },
       });
 
-      // 2. Atualiza pedido
       await tx.pedido.update({
         where: { id: pagamento.pedidoId },
         data: {
-          status: "PAGO",
+          status: PEDIDO_STATUS.PAGO,
+          updatedAt: new Date(),
+        },
+      });
+
+      await tx.pedidoStatus.create({
+        data: {
+          pedidoId: pagamento.pedidoId,
+          status: PEDIDO_STATUS.PAGO,
+          dataStatus: new Date(),
+          empresaId: pagamento.pedido.empresaId,
         },
       });
 
@@ -354,9 +399,20 @@ export class PagamentosService {
       await tx.pedido.update({
         where: { id: pagamento.pedidoId },
         data: {
-          status: "FINALIZADO",
+          status: PEDIDO_STATUS.FINALIZADO,
+          updatedAt: new Date(),
         },
       });
+
+      await tx.pedidoStatus.create({
+        data: {
+          pedidoId: pagamento.pedidoId,
+          status: PEDIDO_STATUS.FINALIZADO,
+          dataStatus: new Date(),
+          empresaId: pagamento.pedido.empresaId,
+        },
+      });
+
 
       // 3) BAIXA ESTOQUE
       for (const item of pagamento.pedido.itens) {

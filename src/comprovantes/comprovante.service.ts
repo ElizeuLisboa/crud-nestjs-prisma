@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { v2 as cloudinary } from "cloudinary";
+import { PEDIDO_STATUS } from "../common/enums/pedido-status.enum";
 
 @Injectable()
 export class ComprovanteService {
@@ -17,7 +18,7 @@ export class ComprovanteService {
       where: { id: dados.pedidoId },
     });
 
-    if ( !pedido || !pedido.empresaId ) {
+    if (!pedido || !pedido.empresaId) {
       throw new NotFoundException("Pedido não encontrado");
     }
 
@@ -43,13 +44,31 @@ export class ComprovanteService {
 
     console.log("✅ Comprovante criado:", comprovante);
 
-    // ✅ Atualiza o pedido para status ENTREGUE
+    // // ✅ Atualiza o pedido para status ENTREGUE
+    // await this.prisma.pedido.update({
+    //   where: { id: dados.pedidoId },
+    //   data: {
+    //     status: "ENTREGUE",
+    //     entregue: true,
+    //     updatedAt: new Date(),
+    //   },
+    // });
+
     await this.prisma.pedido.update({
       where: { id: dados.pedidoId },
       data: {
-        status: "ENTREGUE",
+        status: PEDIDO_STATUS.ENTREGUE,
         entregue: true,
         updatedAt: new Date(),
+      },
+    });
+
+    await this.prisma.pedidoStatus.create({
+      data: {
+        pedidoId: dados.pedidoId,
+        status: PEDIDO_STATUS.ENTREGUE,
+        dataStatus: new Date(),
+        empresaId: pedido.empresaId,
       },
     });
 

@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { PixService } from "../pagamentos/pix/pix.service";
+import { PEDIDO_STATUS } from "../common/enums/pedido-status.enum";
 
 @Injectable()
 export class CaixaService {
@@ -82,11 +83,7 @@ export class CaixaService {
       }
 
       const numeroPedido = `PDV-${String(seq.proximoNumero).padStart(6, "0")}`;
-      // console.log("📦 DATA RECEBIDA:", data);
-      // console.log("👤 USUARIO:", usuario);
-      // console.log("🏢 empresaId:", empresaId);
 
-      // console.log("1️⃣ Criando pedido...");
       const pedido = await tx.pedido.create({
         data: {
           numeroPedido,
@@ -154,7 +151,7 @@ export class CaixaService {
 
           forma: metodoPagamento,
           valor: valorTotal ?? totalCalculado,
-          status: metodoPagamento === "PIX" ? "PENDENTE" : "PAGO",
+          status: metodoPagamento === "PIX" ? "PENDENTE" : PEDIDO_STATUS.PAGO,
           parcelas: metodoPagamento === "CREDITO" ? parcelas : 1,
 
           empresaId, // ✅ TAMBÉM CORRETO AQUI
@@ -197,12 +194,12 @@ export class CaixaService {
 
         await tx.pagamento.update({
           where: { id: pagamento.id },
-          data: { status: "PAGO", pixStatus: "CONFIRMADO" },
+          data: { status: PEDIDO_STATUS.PAGO, pixStatus: "CONFIRMADO" },
         });
 
         await tx.pedido.update({
           where: { id: pedido.id },
-          data: { status: "FINALIZADO" },
+          data: { status: PEDIDO_STATUS.PAGO },
         });
       }
 
@@ -210,51 +207,9 @@ export class CaixaService {
       if (metodoPagamento !== "PIX") {
         await tx.pedido.update({
           where: { id: pedido.id },
-          data: { status: "FINALIZADO" },
+          data: { status: PEDIDO_STATUS.PAGO },
         });
       }
-
-      // if (metodoPagamento === "PIX") {
-      //   const pixGerado = this.pixService.gerarPix({
-      //     pedidoId: pedido.id,
-      //     valor: Number(valorTotal ?? totalCalculado),
-      //     descricao: `Pedido ${pedido.id}`,
-      //     nome: clienteValido ? "CLIENTE IDENTIFICADO" : "CLIENTE PDV",
-      //   });
-
-      //   const qrBase64 = await this.pixService.gerarQrCodeBase64(
-      //     pixGerado.codigo,
-      //   );
-
-      //   await tx.pagamento.update({
-      //     where: { id: pagamento.id },
-      //     data: {
-      //       pixCodigo: pixGerado.codigo,
-      //       pixTxid: pixGerado.txid,
-      //       pixQrCodeBase64: qrBase64,
-      //       pixStatus: "GERADO",
-      //     },
-      //   });
-
-      //   dadosPix = {
-      //     pixCodigo: pixGerado.codigo,
-      //     pixQrCodeBase64: qrBase64,
-      //     pixTxid: pixGerado.txid,
-      //   };
-
-      //   await tx.pagamento.update({
-      //     where: { id: pagamento.id },
-      //     data: { status: "PAGO", pixStatus: "CONFIRMADO" },
-      //   });
-
-      //   // 🔥 Se não for PIX, já finaliza pedido
-      //   if (metodoPagamento !== "PIX") {
-      //     await tx.pedido.update({
-      //       where: { id: pedido.id },
-      //       data: { status: "FINALIZADO" },
-      //     });
-      //   }
-      // }
 
       const pedidoCompleto = await tx.pedido.findUnique({
         where: { id: pedido.id },
