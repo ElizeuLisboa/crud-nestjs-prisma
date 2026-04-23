@@ -57,8 +57,8 @@ export class ProdutosService {
           ? {
               create: data.unidades.map((u: ProdutoUnidadeDto) => ({
                 tipo: u.tipo,
-                fator: u.fator,
-                preco: u.preco,
+                fator:  Number(u.fator),
+                preco: Number(u.preco),
               })),
             }
           : undefined,
@@ -158,22 +158,6 @@ export class ProdutosService {
       },
     });
   }
-
-  // async listarCategorias( grupoId ) {
-  //   return this.prisma.categoriaProduto.findMany({
-  //     select: {
-  //       id: true,
-  //       nome: true,
-  //       familia: {
-  //         select: {
-  //           id: true,
-  //           nome: true,
-  //         },
-  //       },
-  //     },
-  //     orderBy: { nome: "asc" },
-  //   });
-  // }
 
   async listarFamilias() {
     return this.prisma.familiaProduto.findMany({
