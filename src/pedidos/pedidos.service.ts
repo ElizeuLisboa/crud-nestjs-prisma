@@ -413,7 +413,7 @@ export class PedidosService {
     const pedido = await this.prisma.pedido.findFirst({
       where: {
         id,
-        empresaId: user.empresaId,
+        // empresaId: user.empresaId,
       },
       include: {
         itens: {
@@ -421,6 +421,8 @@ export class PedidosService {
             produto: true,
           },
         },
+        cliente: true,
+        empresa: true,
       },
     });
 
