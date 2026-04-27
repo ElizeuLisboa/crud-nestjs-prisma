@@ -181,7 +181,7 @@ export class PagamentosService {
             metodoPagamento: "MERCADOPAGO",
           },
         });
-
+        console.log("🧾 Gerando DANFE via webhook:", pedidoId);
         await this.gerarDanfe(pedidoId);
       }
 
@@ -350,6 +350,7 @@ export class PagamentosService {
   }
 
   async gerarDanfe(pedidoId: number) {
+    console.log("🔥 gerarDanfe chamada para pedido:", pedidoId);
     const pedido = await this.prisma.pedido.findUnique({
       where: { id: pedidoId },
       include: {
