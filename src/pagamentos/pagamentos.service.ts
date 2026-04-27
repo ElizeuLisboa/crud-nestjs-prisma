@@ -177,11 +177,14 @@ export class PagamentosService {
         await tx.pedido.update({
           where: { id: pedidoId },
           data: {
-            status: "PAGO",
+            status: PEDIDO_STATUS.PAGO,
             metodoPagamento: "MERCADOPAGO",
           },
         });
+
+        await this.gerarDanfe(pedidoId);
       }
+
     });
   }
 
