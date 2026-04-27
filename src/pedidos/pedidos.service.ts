@@ -144,7 +144,7 @@ export class PedidosService {
           data: {
             numeroPedido,
             empresaId,
-            clienteId: user.id,
+            clienteId: null,
             valorTotal,
             status: PEDIDO_STATUS.PENDENTE,
             origem: "SITE",
