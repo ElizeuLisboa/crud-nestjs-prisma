@@ -16,6 +16,7 @@ export class PagarMercadoPagoDto {
   paymentMethodId?: string;
 
   payer?: {
+    email?: string;
     identification: {
       type: "CPF";
       number: string;

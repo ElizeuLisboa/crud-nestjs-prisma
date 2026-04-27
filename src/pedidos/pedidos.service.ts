@@ -204,6 +204,7 @@ export class PedidosService {
           await tx.produto.update({
             where: {
               id: item.produtoId,
+              empresaId,
             },
             data: {
               estoque: {
