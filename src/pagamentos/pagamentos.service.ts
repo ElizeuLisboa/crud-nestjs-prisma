@@ -11,19 +11,18 @@ import { PagarMercadoPagoDto } from "./dto/pagar-mercadopago.dto";
 import { Prisma } from "@prisma/client";
 import { PEDIDO_STATUS } from "../common/enums/pedido-status.enum";
 
+import PDFDocument from "pdfkit";
+import * as fs from "fs";
+import * as path from "path";
+
 @Injectable()
 export class PagamentosService {
   private readonly logger = new Logger(PagamentosService.name);
-  // private readonly preference: Preference;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly mercadoPagoService: MercadoPagoService,
   ) {}
-
-  // 👇 AJUSTE PRINCIPAL PARA O pagamentos.service.ts
-
-  // 1. CRIE ESTA FUNÇÃO DENTRO DO PagamentosService
 
   async atualizarStatusPedido(
     pedidoId: number,
@@ -53,23 +52,6 @@ export class PagamentosService {
   }
 
   async pagarComCartao(dto: PagarMercadoPagoDto) {
-    // 🔐 MODO CONTINGÊNCIA TEMPORÁRIO
-    // if (process.env.MODO_PDVMVP === "true") {
-    //   await this.prisma.pedido.update({
-    //     where: { id: dto.pedidoId },
-    //     data: {
-    //       status: PEDIDO_STATUS.PAGO,
-    //       metodoPagamento: "MERCADOPAGO",
-    //     },
-    //   });
-
-    //   return {
-    //     status: "approved",
-    //     id: "SIMULADO",
-    //     transaction_amount: dto.valor,
-    //   };
-    // }
-
     if (process.env.MODO_PDVMVP === "true") {
       const pedido = await this.prisma.pedido.findUnique({
         where: { id: dto.pedidoId },
@@ -242,7 +224,7 @@ export class PagamentosService {
       throw new NotFoundException("Pagamento não encontrado");
     }
 
-    if (pagamento.status !== "PAGO") {
+    if (pagamento.status !== PEDIDO_STATUS.PAGO) {
       await this.simularPixPago(txid);
     }
 
@@ -299,14 +281,6 @@ export class PagamentosService {
           "PIX",
         );
       }
-
-      // await this.prisma.pedido.update({
-      //   where: { id: pedidoId },
-      //   data: {
-      //     status: "PAGO",
-      //     metodoPagamento: "PIX",
-      //   },
-      // });
     }
     return { ok: true };
   }
@@ -330,8 +304,8 @@ export class PagamentosService {
       await tx.pagamento.update({
         where: { id: pagamentoId },
         data: {
-          status: "PAGO",
-          pixStatus: "PAGO",
+          status: PEDIDO_STATUS.PAGO,
+          pixStatus: PEDIDO_STATUS.PAGO,
         },
       });
 
@@ -366,9 +340,115 @@ export class PagamentosService {
           },
         });
       }
-
+      // ===================
+      // ====================
       return { ok: true };
     });
+  }
+
+  async gerarDanfe(pedidoId: number) {
+    const pedido = await this.prisma.pedido.findUnique({
+      where: { id: pedidoId },
+      include: {
+        cliente: true,
+        empresa: true,
+        itens: {
+          include: {
+            produto: true,
+          },
+        },
+        pagamentos: true,
+      },
+    });
+
+    if (!pedido) {
+      throw new NotFoundException("Pedido não encontrado");
+    }
+
+    const pastaDanfe = path.resolve(process.cwd(), "uploads", "danfes");
+
+    if (!fs.existsSync(pastaDanfe)) {
+      fs.mkdirSync(pastaDanfe, { recursive: true });
+    }
+
+    const nomeArquivo = `danfe-pedido-${pedido.id}.pdf`;
+    const caminhoArquivo = path.join(pastaDanfe, nomeArquivo);
+
+    const doc = new PDFDocument({
+      margin: 50,
+      size: "A4",
+    });
+
+    const stream = fs.createWriteStream(caminhoArquivo);
+    doc.pipe(stream);
+
+    // Cabeçalho
+    doc.fontSize(18).text("DANFE - Documento Auxiliar", {
+      align: "center",
+    });
+
+    doc.moveDown();
+
+    doc
+      .fontSize(12)
+      .text(`Pedido: ${pedido.numeroPedido}`)
+      .text(`Data: ${new Date(pedido.createdAt).toLocaleString()}`)
+      .text(`Status: ${pedido.status}`)
+      .text(`Forma de pagamento: ${pedido.metodoPagamento}`);
+
+    doc.moveDown();
+
+    // Cliente
+    doc.fontSize(14).text("Cliente", {
+      underline: true,
+    });
+
+    doc
+      .fontSize(12)
+      .text(`Nome: ${pedido.cliente?.nome || "Consumidor Final"}`);
+
+    doc.moveDown();
+
+    // Empresa
+    doc.fontSize(14).text("Empresa", {
+      underline: true,
+    });
+
+    doc.fontSize(12).text(`Empresa ID: ${pedido.empresaId}`);
+
+    doc.moveDown();
+
+    // Itens
+    doc.fontSize(14).text("Itens do Pedido", {
+      underline: true,
+    });
+
+    pedido.itens.forEach((item) => {
+      doc.text(
+        `${item.produto.title} - Qtd: ${item.quantidade} - R$ ${item.valorUnitario?.toFixed(2)}`,
+      );
+    });
+
+    doc.moveDown();
+
+    // Total
+    doc.fontSize(14).text(`Valor Total: R$ ${pedido.valorTotal}`, {
+      align: "right",
+    });
+
+    doc.moveDown(2);
+
+    doc.fontSize(10).text("Documento gerado automaticamente pelo sistema.", {
+      align: "center",
+    });
+
+    doc.end();
+
+    return {
+      sucesso: true,
+      arquivo: nomeArquivo,
+      caminho: caminhoArquivo,
+    };
   }
 
   async simularPixPago(txid: string) {
@@ -390,8 +470,8 @@ export class PagamentosService {
       await tx.pagamento.update({
         where: { id: pagamento.id },
         data: {
-          status: "PAGO",
-          pixStatus: "PAGO",
+          status: PEDIDO_STATUS.PAGO,
+          pixStatus: PEDIDO_STATUS.PAGO,
         },
       });
 
@@ -412,7 +492,6 @@ export class PagamentosService {
           empresaId: pagamento.pedido.empresaId,
         },
       });
-
 
       // 3) BAIXA ESTOQUE
       for (const item of pagamento.pedido.itens) {
