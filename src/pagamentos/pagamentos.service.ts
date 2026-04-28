@@ -49,6 +49,11 @@ export class PagamentosService {
         empresaId,
       },
     });
+    if (novoStatus === PEDIDO_STATUS.PAGO) {
+      console.log("🧾 Gerando DANFE centralizada:", pedidoId);
+
+      await this.gerarDanfe(pedidoId);
+    }
 
     console.log(`📦 Pedido ${pedidoId} atualizado para status: ${novoStatus}`);
   }
@@ -218,11 +223,11 @@ export class PagamentosService {
     });
 
     // 🔥 SEGUNDO: DANFE FORA da transaction
-    if (payment.status === "approved") {
-      console.log("🧾 Gerando DANFE fora da transaction:", pedidoId);
+    // if (payment.status === "approved") {
+    //   console.log("🧾 Gerando DANFE fora da transaction:", pedidoId);
 
-      await this.gerarDanfe(pedidoId);
-    }
+    //   await this.gerarDanfe(pedidoId);
+    // }
   }
 
   async gerarDanfe(pedidoId: number) {
@@ -333,16 +338,15 @@ export class PagamentosService {
     });
 
     const upload = await this.uploadService.uploadDanfe(caminhoArquivo);
-    
+
     console.log("☁️ DANFE enviada para Cloudinary:", upload.arquivoUrl);
 
     await this.prisma.pedido.update({
       where: { id: pedidoId },
       data: {
-        danfeUrl: pedido.danfeUrl,
+        danfeUrl: upload.arquivoUrl,
       },
     });
-
 
     if (fs.existsSync(caminhoArquivo)) {
       fs.unlinkSync(caminhoArquivo);
@@ -450,8 +454,8 @@ export class PagamentosService {
           pedido.empresaId,
           "PIX",
         );
-        console.log("🧾 Gerando DANFE via processarWebhookMP");
-        await this.gerarDanfe(pedidoId);
+        //console.log("🧾 Gerando DANFE via processarWebhookMP");
+        // await this.gerarDanfe(pedidoId);
       }
     }
     return { ok: true };
