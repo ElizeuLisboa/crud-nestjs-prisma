@@ -125,6 +125,7 @@ export class PagamentosService {
   }
 
   async processarWebhookMercadoPago(body: any) {
+    console.log("🔥 ENTROU EM processarWebhookMercadoPago");
     if (body.type !== "payment") return;
 
     const paymentId = body.data?.id;
@@ -385,7 +386,7 @@ export class PagamentosService {
 
   async processarWebhookMP(body: any) {
     console.log("📩 WEBHOOK RECEBIDO:", body);
-
+    console.log("🔥 ENTROU EM processarWebhookMP");
     const paymentId = body?.data?.id;
 
     if (!paymentId) {
@@ -424,6 +425,8 @@ export class PagamentosService {
           pedido.empresaId,
           "PIX",
         );
+        console.log("🧾 Gerando DANFE via processarWebhookMP");
+        await this.gerarDanfe(pedidoId);
       }
     }
     return { ok: true };
@@ -431,6 +434,7 @@ export class PagamentosService {
 
   async confirmarPagamento(pagamentoId: number) {
     return this.prisma.$transaction(async (tx) => {
+      console.log("🔥 ENTROU EM confirmarPagamento");
       const pagamento = await tx.pagamento.findUnique({
         where: { id: pagamentoId },
         include: {
