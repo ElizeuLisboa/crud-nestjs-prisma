@@ -252,8 +252,6 @@ export class PagamentosService {
       recursive: true,
     });
 
-
-
     const nomeArquivo = `danfe-pedido-${pedido.id}.pdf`;
     const caminhoArquivo = path.join(pastaDanfe, nomeArquivo);
 
@@ -335,16 +333,16 @@ export class PagamentosService {
     });
 
     const upload = await this.uploadService.uploadDanfe(caminhoArquivo);
+    
+    console.log("☁️ DANFE enviada para Cloudinary:", upload.arquivoUrl);
 
     await this.prisma.pedido.update({
       where: { id: pedidoId },
       data: {
-        danfeUrl: upload.arquivoUrl,
+        danfeUrl: pedido.danfeUrl,
       },
     });
 
-
-    console.log("☁️ DANFE enviada para Cloudinary:", upload.arquivoUrl);
 
     if (fs.existsSync(caminhoArquivo)) {
       fs.unlinkSync(caminhoArquivo);
