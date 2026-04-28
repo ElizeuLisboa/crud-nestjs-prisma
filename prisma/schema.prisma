@@ -208,6 +208,7 @@ model Pedido {
   empresaId       Int
   origem          String              @default("PDV")
   comprovantes    ComprovanteEntrega?
+  danfeUrl        String?
   fretes          Frete[]
   itens           ItemPedido[]
   pagamentos      Pagamento[]

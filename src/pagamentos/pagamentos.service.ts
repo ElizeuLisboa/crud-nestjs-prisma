@@ -105,7 +105,7 @@ export class PagamentosService {
       data: {
         pedidoId,
         valor: pedido.valorTotal,
-        forma: "PIX", // ou metodoPagamento
+        forma: "CARTAO MP", // ou metodoPagamento
         status: "PAGO",
         empresaId: pedido.empresaId,
       },
@@ -115,7 +115,7 @@ export class PagamentosService {
       pedidoId,
       PEDIDO_STATUS.PAGO,
       pedido.empresaId,
-      "PIX",
+      "MERCADOPAGO",
     );
 
     const pagamento = await this.mercadoPagoService.criarPagamentoPix({
@@ -245,11 +245,7 @@ export class PagamentosService {
       throw new NotFoundException("Pedido não encontrado");
     }
 
-    const pastaDanfe = path.resolve(
-      process.cwd(), 
-      "uploads", 
-      "danfes"
-    );
+    const pastaDanfe = path.resolve(process.cwd(), "uploads", "danfes");
     console.log("📁 Verificando pasta DANFE:", pastaDanfe);
 
     fs.mkdirSync(pastaDanfe, {
@@ -257,11 +253,9 @@ export class PagamentosService {
     });
 
 
+
     const nomeArquivo = `danfe-pedido-${pedido.id}.pdf`;
-    const caminhoArquivo = path.join(
-      pastaDanfe, 
-      nomeArquivo
-    );
+    const caminhoArquivo = path.join(pastaDanfe, nomeArquivo);
 
     console.log("📄 Caminho final da DANFE:", caminhoArquivo);
 
@@ -270,10 +264,8 @@ export class PagamentosService {
       size: "A4",
     });
 
-    const stream = fs.createWriteStream(
-      caminhoArquivo
-    );
-    
+    const stream = fs.createWriteStream(caminhoArquivo);
+
     doc.pipe(stream);
 
     // Cabeçalho
@@ -286,7 +278,7 @@ export class PagamentosService {
     doc
       .fontSize(12)
       .text(`Pedido: ${pedido.numeroPedido}`)
-      .text(`Data: ${new Date(pedido.createdAt).toLocaleString()}`)
+      .text(`Data: ${new Date(pedido.createdAt).toLocaleString("pt-BR")}`)
       .text(`Status: ${pedido.status}`)
       .text(`Forma de pagamento: ${pedido.metodoPagamento}`);
 
@@ -343,6 +335,14 @@ export class PagamentosService {
     });
 
     const upload = await this.uploadService.uploadDanfe(caminhoArquivo);
+
+    await this.prisma.pedido.update({
+      where: { id: pedidoId },
+      data: {
+        danfeUrl: upload.arquivoUrl,
+      },
+    });
+
 
     console.log("☁️ DANFE enviada para Cloudinary:", upload.arquivoUrl);
 
