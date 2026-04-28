@@ -188,6 +188,7 @@ export class PagamentosService {
     });
   }
 
+
 async gerarDanfe(pedidoId: number) {
     console.log("🔥 gerarDanfe chamada para pedido:", pedidoId);
     const pedido = await this.prisma.pedido.findUnique({
@@ -209,6 +210,7 @@ async gerarDanfe(pedidoId: number) {
     }
 
     const pastaDanfe = path.resolve(process.cwd(), "uploads", "danfes");
+    console.log("📁 Verificando pasta DANFE:", pastaDanfe);
 
     if (!fs.existsSync(pastaDanfe)) {
       fs.mkdirSync(pastaDanfe, { recursive: true });
