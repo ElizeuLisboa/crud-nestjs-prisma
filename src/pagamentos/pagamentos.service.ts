@@ -245,22 +245,35 @@ export class PagamentosService {
       throw new NotFoundException("Pedido não encontrado");
     }
 
-    const pastaDanfe = path.resolve(process.cwd(), "uploads", "danfes");
+    const pastaDanfe = path.resolve(
+      process.cwd(), 
+      "uploads", 
+      "danfes"
+    );
     console.log("📁 Verificando pasta DANFE:", pastaDanfe);
 
-    // if (!fs.existsSync(pastaDanfe)) {
-    //   fs.mkdirSync(pastaDanfe, { recursive: true });
-    // }
+    fs.mkdirSync(pastaDanfe, {
+      recursive: true,
+    });
+
 
     const nomeArquivo = `danfe-pedido-${pedido.id}.pdf`;
-    const caminhoArquivo = path.join(pastaDanfe, nomeArquivo);
+    const caminhoArquivo = path.join(
+      pastaDanfe, 
+      nomeArquivo
+    );
+
+    console.log("📄 Caminho final da DANFE:", caminhoArquivo);
 
     const doc = new PDFDocument({
       margin: 50,
       size: "A4",
     });
 
-    const stream = fs.createWriteStream(caminhoArquivo);
+    const stream = fs.createWriteStream(
+      caminhoArquivo
+    );
+    
     doc.pipe(stream);
 
     // Cabeçalho
