@@ -7,9 +7,11 @@ import { PrismaModule } from "../prisma/prisma.module";
 import { MercadoPagoController } from "./mercadopago/mercadopago.controller";
 import { PrismaService } from "../prisma/prisma.service";
 import { PagamentosController } from "./pagamentos.controller";
+import { UploadModule } from "../upload/upload.module";
+
 
 @Module({
-  imports: [],
+  imports: [UploadModule],
   controllers: [
     PagamentosController,
   ],
@@ -19,4 +21,6 @@ import { PagamentosController } from "./pagamentos.controller";
     PrismaService,
   ],
 })
+
+
 export class PagamentosModule {}
