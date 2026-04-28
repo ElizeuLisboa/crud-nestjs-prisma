@@ -13,4 +13,16 @@ export class UploadService {
       cloudinaryId: result.public_id,
     };
   }
+
+  async uploadDanfe(caminhoArquivo: string) {
+    const result = await cloudinary.uploader.upload(caminhoArquivo, {
+      folder: "danfes",
+      resource_type: "raw",
+    });
+
+    return {
+      arquivoUrl: result.secure_url,
+      cloudinaryId: result.public_id,
+    };
+  }
 }

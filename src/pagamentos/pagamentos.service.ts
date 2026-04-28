@@ -10,6 +10,7 @@ import { Preference } from "mercadopago";
 import { PagarMercadoPagoDto } from "./dto/pagar-mercadopago.dto";
 import { Prisma } from "@prisma/client";
 import { PEDIDO_STATUS } from "../common/enums/pedido-status.enum";
+import { UploadService } from "../upload/upload.service";
 
 import PDFDocument from "pdfkit";
 import * as fs from "fs";
@@ -22,6 +23,7 @@ export class PagamentosService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mercadoPagoService: MercadoPagoService,
+    private readonly uploadService: UploadService,
   ) {}
 
   async atualizarStatusPedido(
@@ -246,9 +248,9 @@ export class PagamentosService {
     const pastaDanfe = path.resolve(process.cwd(), "uploads", "danfes");
     console.log("📁 Verificando pasta DANFE:", pastaDanfe);
 
-    if (!fs.existsSync(pastaDanfe)) {
-      fs.mkdirSync(pastaDanfe, { recursive: true });
-    }
+    // if (!fs.existsSync(pastaDanfe)) {
+    //   fs.mkdirSync(pastaDanfe, { recursive: true });
+    // }
 
     const nomeArquivo = `danfe-pedido-${pedido.id}.pdf`;
     const caminhoArquivo = path.join(pastaDanfe, nomeArquivo);
@@ -323,10 +325,22 @@ export class PagamentosService {
 
     doc.end();
 
+    await new Promise((resolve) => {
+      stream.on("finish", resolve);
+    });
+
+    const upload = await this.uploadService.uploadDanfe(caminhoArquivo);
+
+    console.log("☁️ DANFE enviada para Cloudinary:", upload.arquivoUrl);
+
+    if (fs.existsSync(caminhoArquivo)) {
+      fs.unlinkSync(caminhoArquivo);
+    }
+
     return {
       sucesso: true,
       arquivo: nomeArquivo,
-      caminho: caminhoArquivo,
+      url: upload.arquivoUrl,
     };
   }
 
