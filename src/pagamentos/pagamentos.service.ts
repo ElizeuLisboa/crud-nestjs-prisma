@@ -141,55 +141,88 @@ export class PagamentosService {
 
     const mpId = payment.id.toString();
     const pedidoId = Number(payment?.external_reference);
+
     if (!pedidoId) return;
 
+    // 🔥 PRIMEIRO: resolve tudo do banco dentro da transaction
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const pedido = await tx.pedido.findUnique({
         where: { id: pedidoId },
       });
+
       if (!pedido || !pedido.empresaId) return;
+
       const existente = await tx.pagamento.findFirst({
-        where: { codigoExterno: mpId },
+        where: {
+          codigoExterno: mpId,
+        },
       });
+
       if (!existente) {
         await tx.pagamento.create({
           data: {
             pedidoId,
             forma: "MERCADOPAGO",
             valor: Number(payment?.transaction_amount),
-            status: payment?.status === "approved" ? "PAGO" : "PENDENTE",
+            status:
+              payment?.status === "approved"
+                ? PEDIDO_STATUS.PAGO
+                : PEDIDO_STATUS.PENDENTE,
             parcelas: payment?.installments ?? 1,
             descricao: "Pagamento Mercado Pago (webhook)",
             codigoExterno: mpId,
-            empresaId: pedido?.empresaId, // empresa padrão
+            empresaId: pedido.empresaId,
           },
         });
       } else {
         await tx.pagamento.update({
-          where: { id: existente.id },
+          where: {
+            id: existente.id,
+          },
           data: {
-            status: payment?.status === "approved" ? "PAGO" : "PENDENTE",
+            status:
+              payment?.status === "approved"
+                ? PEDIDO_STATUS.PAGO
+                : PEDIDO_STATUS.PENDENTE,
           },
         });
       }
 
       if (payment.status === "approved") {
         await tx.pedido.update({
-          where: { id: pedidoId },
+          where: {
+            id: pedidoId,
+          },
           data: {
             status: PEDIDO_STATUS.PAGO,
             metodoPagamento: "MERCADOPAGO",
           },
         });
-        console.log("🧾 Gerando DANFE via webhook:", pedidoId);
-        await this.gerarDanfe(pedidoId);
-      }
 
+        await tx.pedidoStatus.create({
+          data: {
+            pedidoId,
+            status: PEDIDO_STATUS.PAGO,
+            dataStatus: new Date(),
+            empresaId: pedido.empresaId,
+          },
+        });
+
+        console.log(
+          `📦 Pedido ${pedidoId} atualizado para status: ${PEDIDO_STATUS.PAGO}`,
+        );
+      }
     });
+
+    // 🔥 SEGUNDO: DANFE FORA da transaction
+    if (payment.status === "approved") {
+      console.log("🧾 Gerando DANFE fora da transaction:", pedidoId);
+
+      await this.gerarDanfe(pedidoId);
+    }
   }
 
-
-async gerarDanfe(pedidoId: number) {
+  async gerarDanfe(pedidoId: number) {
     console.log("🔥 gerarDanfe chamada para pedido:", pedidoId);
     const pedido = await this.prisma.pedido.findUnique({
       where: { id: pedidoId },
@@ -295,7 +328,6 @@ async gerarDanfe(pedidoId: number) {
       caminho: caminhoArquivo,
     };
   }
-  
 
   async criarCheckoutMercadoPago(pedidoId: number) {
     const pedido = await this.prisma.pedido.findUnique({
@@ -458,7 +490,6 @@ async gerarDanfe(pedidoId: number) {
     });
   }
 
-  
   async simularPixPago(txid: string) {
     return this.prisma.$transaction(async (tx) => {
       const pagamento = await tx.pagamento.findFirst({
@@ -519,11 +550,7 @@ async gerarDanfe(pedidoId: number) {
         pedido: pagamento.pedido,
       };
     });
-
   }
-
-
-  
 
   private abrirGaveta() {
     console.log("🔓 GAVETA ABERTA (SIMULADO)");
