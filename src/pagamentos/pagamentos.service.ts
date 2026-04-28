@@ -188,6 +188,113 @@ export class PagamentosService {
     });
   }
 
+async gerarDanfe(pedidoId: number) {
+    console.log("🔥 gerarDanfe chamada para pedido:", pedidoId);
+    const pedido = await this.prisma.pedido.findUnique({
+      where: { id: pedidoId },
+      include: {
+        cliente: true,
+        empresa: true,
+        itens: {
+          include: {
+            produto: true,
+          },
+        },
+        pagamentos: true,
+      },
+    });
+
+    if (!pedido) {
+      throw new NotFoundException("Pedido não encontrado");
+    }
+
+    const pastaDanfe = path.resolve(process.cwd(), "uploads", "danfes");
+
+    if (!fs.existsSync(pastaDanfe)) {
+      fs.mkdirSync(pastaDanfe, { recursive: true });
+    }
+
+    const nomeArquivo = `danfe-pedido-${pedido.id}.pdf`;
+    const caminhoArquivo = path.join(pastaDanfe, nomeArquivo);
+
+    const doc = new PDFDocument({
+      margin: 50,
+      size: "A4",
+    });
+
+    const stream = fs.createWriteStream(caminhoArquivo);
+    doc.pipe(stream);
+
+    // Cabeçalho
+    doc.fontSize(18).text("DANFE - Documento Auxiliar", {
+      align: "center",
+    });
+
+    doc.moveDown();
+
+    doc
+      .fontSize(12)
+      .text(`Pedido: ${pedido.numeroPedido}`)
+      .text(`Data: ${new Date(pedido.createdAt).toLocaleString()}`)
+      .text(`Status: ${pedido.status}`)
+      .text(`Forma de pagamento: ${pedido.metodoPagamento}`);
+
+    doc.moveDown();
+
+    // Cliente
+    doc.fontSize(14).text("Cliente", {
+      underline: true,
+    });
+
+    doc
+      .fontSize(12)
+      .text(`Nome: ${pedido.cliente?.nome || "Consumidor Final"}`);
+
+    doc.moveDown();
+
+    // Empresa
+    doc.fontSize(14).text("Empresa", {
+      underline: true,
+    });
+
+    doc.fontSize(12).text(`Empresa ID: ${pedido.empresaId}`);
+
+    doc.moveDown();
+
+    // Itens
+    doc.fontSize(14).text("Itens do Pedido", {
+      underline: true,
+    });
+
+    pedido.itens.forEach((item) => {
+      doc.text(
+        `${item.produto.title} - Qtd: ${item.quantidade} - R$ ${item.valorUnitario?.toFixed(2)}`,
+      );
+    });
+
+    doc.moveDown();
+
+    // Total
+    doc.fontSize(14).text(`Valor Total: R$ ${pedido.valorTotal}`, {
+      align: "right",
+    });
+
+    doc.moveDown(2);
+
+    doc.fontSize(10).text("Documento gerado automaticamente pelo sistema.", {
+      align: "center",
+    });
+
+    doc.end();
+
+    return {
+      sucesso: true,
+      arquivo: nomeArquivo,
+      caminho: caminhoArquivo,
+    };
+  }
+  
+
   async criarCheckoutMercadoPago(pedidoId: number) {
     const pedido = await this.prisma.pedido.findUnique({
       where: { id: pedidoId },
@@ -349,112 +456,7 @@ export class PagamentosService {
     });
   }
 
-  async gerarDanfe(pedidoId: number) {
-    console.log("🔥 gerarDanfe chamada para pedido:", pedidoId);
-    const pedido = await this.prisma.pedido.findUnique({
-      where: { id: pedidoId },
-      include: {
-        cliente: true,
-        empresa: true,
-        itens: {
-          include: {
-            produto: true,
-          },
-        },
-        pagamentos: true,
-      },
-    });
-
-    if (!pedido) {
-      throw new NotFoundException("Pedido não encontrado");
-    }
-
-    const pastaDanfe = path.resolve(process.cwd(), "uploads", "danfes");
-
-    if (!fs.existsSync(pastaDanfe)) {
-      fs.mkdirSync(pastaDanfe, { recursive: true });
-    }
-
-    const nomeArquivo = `danfe-pedido-${pedido.id}.pdf`;
-    const caminhoArquivo = path.join(pastaDanfe, nomeArquivo);
-
-    const doc = new PDFDocument({
-      margin: 50,
-      size: "A4",
-    });
-
-    const stream = fs.createWriteStream(caminhoArquivo);
-    doc.pipe(stream);
-
-    // Cabeçalho
-    doc.fontSize(18).text("DANFE - Documento Auxiliar", {
-      align: "center",
-    });
-
-    doc.moveDown();
-
-    doc
-      .fontSize(12)
-      .text(`Pedido: ${pedido.numeroPedido}`)
-      .text(`Data: ${new Date(pedido.createdAt).toLocaleString()}`)
-      .text(`Status: ${pedido.status}`)
-      .text(`Forma de pagamento: ${pedido.metodoPagamento}`);
-
-    doc.moveDown();
-
-    // Cliente
-    doc.fontSize(14).text("Cliente", {
-      underline: true,
-    });
-
-    doc
-      .fontSize(12)
-      .text(`Nome: ${pedido.cliente?.nome || "Consumidor Final"}`);
-
-    doc.moveDown();
-
-    // Empresa
-    doc.fontSize(14).text("Empresa", {
-      underline: true,
-    });
-
-    doc.fontSize(12).text(`Empresa ID: ${pedido.empresaId}`);
-
-    doc.moveDown();
-
-    // Itens
-    doc.fontSize(14).text("Itens do Pedido", {
-      underline: true,
-    });
-
-    pedido.itens.forEach((item) => {
-      doc.text(
-        `${item.produto.title} - Qtd: ${item.quantidade} - R$ ${item.valorUnitario?.toFixed(2)}`,
-      );
-    });
-
-    doc.moveDown();
-
-    // Total
-    doc.fontSize(14).text(`Valor Total: R$ ${pedido.valorTotal}`, {
-      align: "right",
-    });
-
-    doc.moveDown(2);
-
-    doc.fontSize(10).text("Documento gerado automaticamente pelo sistema.", {
-      align: "center",
-    });
-
-    doc.end();
-
-    return {
-      sucesso: true,
-      arquivo: nomeArquivo,
-      caminho: caminhoArquivo,
-    };
-  }
-
+  
   async simularPixPago(txid: string) {
     return this.prisma.$transaction(async (tx) => {
       const pagamento = await tx.pagamento.findFirst({
@@ -515,7 +517,11 @@ export class PagamentosService {
         pedido: pagamento.pedido,
       };
     });
+
   }
+
+
+  
 
   private abrirGaveta() {
     console.log("🔓 GAVETA ABERTA (SIMULADO)");
