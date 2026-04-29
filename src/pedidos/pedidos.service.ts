@@ -238,9 +238,7 @@ export class PedidosService {
   // =========================================================
 
   async criarVendaCaixa(data: CreatePedidoDto, user: any) {
-    console.log("👤 USER DO CAIXA:", user);
-    console.log("🏢 EMPRESA ID RECEBIDA:", user?.empresaId);
-    
+
     if (!user?.id) {
       throw new UnauthorizedException("Usuário não identificado");
     }
@@ -271,9 +269,11 @@ export class PedidosService {
     );
 
     return this.prisma.$transaction(async (tx) => {
+      
       const numeroPedido = await this.gerarNumeroPedido(tx);
 
       const pedido = await tx.pedido.create({
+        
         data: {
           numeroPedido,
           empresaId,
@@ -301,6 +301,7 @@ export class PedidosService {
 
         include: {
           cliente: true,
+          empresa: true,
           itens: {
             include: {
               produto: true,
