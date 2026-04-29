@@ -72,7 +72,7 @@ export class PagamentosService {
         dto.pedidoId as number,
         PEDIDO_STATUS.PAGO,
         pedido.empresaId,
-        "MERCADOPAGO",
+        "CARTÃO",
       );
 
       return {
@@ -110,7 +110,7 @@ export class PagamentosService {
       data: {
         pedidoId,
         valor: pedido.valorTotal,
-        forma: "CARTAO MP", // ou metodoPagamento
+        forma: "PIX", // ou metodoPagamento
         status: "PAGO",
         empresaId: pedido.empresaId,
       },
@@ -120,7 +120,7 @@ export class PagamentosService {
       pedidoId,
       PEDIDO_STATUS.PAGO,
       pedido.empresaId,
-      "MERCADOPAGO",
+      "PIX",
     );
 
     const pagamento = await this.mercadoPagoService.criarPagamentoPix({
@@ -170,7 +170,7 @@ export class PagamentosService {
         await tx.pagamento.create({
           data: {
             pedidoId,
-            forma: "MERCADOPAGO",
+            forma: "MERCADOPAGO", // ou ""
             valor: Number(payment?.transaction_amount),
             status:
               payment?.status === "approved"
@@ -203,7 +203,7 @@ export class PagamentosService {
           },
           data: {
             status: PEDIDO_STATUS.PAGO,
-            metodoPagamento: "MERCADOPAGO",
+            metodoPagamento: "CARTAO",
           },
         });
 
@@ -272,7 +272,7 @@ export class PagamentosService {
     doc.pipe(stream);
 
     // Cabeçalho
-    doc.fontSize(18).text("DANFE - Documento Auxiliar", {
+    doc.fontSize(18).text("🚚 Pedido em Separação", {
       align: "center",
     });
 
@@ -454,8 +454,7 @@ export class PagamentosService {
           pedido.empresaId,
           "PIX",
         );
-        //console.log("🧾 Gerando DANFE via processarWebhookMP");
-        // await this.gerarDanfe(pedidoId);
+
       }
     }
     return { ok: true };

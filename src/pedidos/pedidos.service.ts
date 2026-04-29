@@ -238,6 +238,9 @@ export class PedidosService {
   // =========================================================
 
   async criarVendaCaixa(data: CreatePedidoDto, user: any) {
+    console.log("👤 USER DO CAIXA:", user);
+    console.log("🏢 EMPRESA ID RECEBIDA:", user?.empresaId);
+    
     if (!user?.id) {
       throw new UnauthorizedException("Usuário não identificado");
     }
