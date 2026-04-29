@@ -80,9 +80,7 @@ export class PedidosService {
       },
     });
 
-    console.log(
-      `📦 Pedido ${pedidoId} atualizado para status: ${novoStatus}`,
-    );
+    console.log(`📦 Pedido ${pedidoId} atualizado para status: ${novoStatus}`);
   }
 
   // =========================================================
@@ -91,7 +89,6 @@ export class PedidosService {
 
   async create(data: CreatePedidoDto, user: any) {
     try {
-      
       if (!user?.id) {
         throw new UnauthorizedException("Usuário não identificado");
       }
@@ -110,9 +107,7 @@ export class PedidosService {
       });
 
       if (produtos.length !== produtoIds.length) {
-        throw new BadRequestException(
-          "Um ou mais produtos não existem",
-        );
+        throw new BadRequestException("Um ou mais produtos não existem");
       }
 
       const produtosMap = new Map(
@@ -159,9 +154,7 @@ export class PedidosService {
                   );
                 }
 
-                const valorUnitario = Number(
-                  item.preco ?? produto.price,
-                );
+                const valorUnitario = Number(item.preco ?? produto.price);
 
                 return {
                   empresaId,
@@ -198,13 +191,25 @@ export class PedidosService {
         // 🔥 BAIXA DE ESTOQUE REAL POR FATOR
         for (const item of data.itens) {
           const fator = Number(item.fator || 1);
-          const quantidadeBaixa =
-            Number(item.quantidade) * fator;
+          const quantidadeBaixa = Number(item.quantidade) * fator;
+
+          const produto = produtosMap.get(item.produtoId);
+
+          if (!produto) {
+            throw new BadRequestException(
+              `Produto ${item.produtoId} não encontrado`,
+            );
+          }
+
+          if (Number(produto.estoque) < quantidadeBaixa) {
+            throw new BadRequestException(
+              `Estoque insuficiente para ${produto.title}`,
+            );
+          }
 
           await tx.produto.update({
             where: {
               id: item.produtoId,
-              empresaId,
             },
             data: {
               estoque: {
@@ -234,16 +239,12 @@ export class PedidosService {
 
   async criarVendaCaixa(data: CreatePedidoDto, user: any) {
     if (!user?.id) {
-      throw new UnauthorizedException(
-        "Usuário não identificado",
-      );
+      throw new UnauthorizedException("Usuário não identificado");
     }
 
     const empresaId = user.empresaId;
 
-    const produtoIds = data.itens.map(
-      (item) => item.produtoId,
-    );
+    const produtoIds = data.itens.map((item) => item.produtoId);
 
     const produtos = await this.prisma.produto.findMany({
       where: {
@@ -262,11 +263,7 @@ export class PedidosService {
       data.itens.reduce((total, item) => {
         const produto = produtosMap.get(item.produtoId);
 
-        return (
-          total +
-          Number(produto?.price ?? 0) *
-            Number(item.quantidade)
-        );
+        return total + Number(produto?.price ?? 0) * Number(item.quantidade);
       }, 0),
     );
 
@@ -320,6 +317,40 @@ export class PedidosService {
       });
 
       console.log("✅ VENDA PDV CRIADA:", pedido);
+
+      for (const item of data.itens) {
+        const fator = Number(item.fator || 1);
+        const quantidadeBaixa = Number(item.quantidade) * fator;
+
+        const produto = produtosMap.get(item.produtoId);
+
+        if (!produto) {
+          throw new BadRequestException(
+            `Produto ${item.produtoId} não encontrado`,
+          );
+        }
+
+        if (Number(produto.estoque) < quantidadeBaixa) {
+          throw new BadRequestException(
+            `Estoque insuficiente para ${produto.title}`,
+          );
+        }
+
+        await tx.produto.update({
+          where: {
+            id: item.produtoId,
+          },
+          data: {
+            estoque: {
+              decrement: quantidadeBaixa,
+            },
+          },
+        });
+
+        console.log(
+          `📦 Estoque baixado no PDV → Produto ${item.produtoId}: -${quantidadeBaixa}`,
+        );
+      }
 
       return pedido;
     });
@@ -427,13 +458,9 @@ export class PedidosService {
     });
 
     if (!pedido) {
-      throw new NotFoundException(
-        "Pedido não encontrado",
-      );
+      throw new NotFoundException("Pedido não encontrado");
     }
 
     return pedido;
   }
 }
-
-

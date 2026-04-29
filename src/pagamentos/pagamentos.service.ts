@@ -314,14 +314,14 @@ export class PagamentosService {
 
     pedido.itens.forEach((item) => {
       doc.text(
-        `${item.produto.title} - Qtd: ${item.quantidade} - R$ ${item.valorUnitario?.toFixed(2)}`,
+        `${item.produto.title} - Qtd: ${item.quantidade} - R$ ${(Number(item.quantidade || 0) * Number(item.valor || 0)).toFixed(2)}`,
       );
     });
 
     doc.moveDown();
 
     // Total
-    doc.fontSize(14).text(`Valor Total: R$ ${pedido.valorTotal}`, {
+    doc.fontSize(14).text(`Valor Total: R$ ${pedido.valorTotal?.toFixed(2)}`, {
       align: "right",
     });
 

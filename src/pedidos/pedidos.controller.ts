@@ -51,9 +51,6 @@ export class PedidosController {
     return this.pedidosService.listarTodos(req.user);
   }
 
-  // 📷 Upload comprovante de entrega
-  
-
   // 🧾 Venda direta no caixa (PDV)
   @UseGuards(JwtAuthGuard)
   @Post("venda-caixa")
