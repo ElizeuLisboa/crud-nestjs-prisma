@@ -6,24 +6,10 @@ import { CaixaService } from "./caixa.service";
 export class CaixaController {
   constructor(private readonly caixaService: CaixaService) {}
 
-@Post("finalizar")
-@UseGuards(JwtAuthGuard)
-async finalizar(
-  @Body() body: any,
-  @Request() req: any,
-) {
-  console.log(req.user)
-  return this.caixaService.finalizarVenda(body, req.user);
-}
-
-  // @Post("finalizar")
-  // @UseGuards(JwtAuthGuard)
-  // async finalizarVenda(@Body() body: any, @Request() req: any) {
-  //   const operadorId = req.user.sub;
-  //   return this.caixaService.finalizarVenda({
-  //     ...body,
-  //     operadorId,
-  //   });
-  //   // return this.caixaService.finalizarVenda(body, req.user);
-  // }
+  @Post("finalizar")
+  @UseGuards(JwtAuthGuard)
+  async finalizar(@Body() body: any, @Request() req: any) {
+    console.log(req.user);
+    return this.caixaService.finalizarVenda(body, req.user);
+  }
 }

@@ -98,7 +98,7 @@ export class CaixaService {
 
           valorTotal: valorTotal ?? totalCalculado,
           status: "AGUARDANDO_PAGAMENTO",
-          metodoPagamento: metodoPagamento, 
+          metodoPagamento: metodoPagamento,
 
           itens: {
             create: itens.map((i: any) => {
@@ -214,18 +214,28 @@ export class CaixaService {
       const pedidoCompleto = await tx.pedido.findUnique({
         where: { id: pedido.id },
         include: {
+          empresa: true,
           itens: {
             include: { produto: true },
           },
         },
       });
 
-      const empresa = await tx.empresa.findFirst();
+      // const pedidoCompleto = await tx.pedido.findUnique({
+      //   where: { id: pedido.id },
+      //   include: {
+      //     itens: {
+      //       include: { produto: true },
+      //     },
+      //   },
+      // });
+
+      // const empresa = await tx.empresa.findFirst();
 
       return {
         ...pedidoCompleto,
-        empresa,
         dadosPix,
+    //  empresa,
       };
     });
   }
